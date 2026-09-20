@@ -1,0 +1,28 @@
+# Normalize line endings for the repository
+* text=auto
+
+# Python source files — always LF in repo
+*.py text eol=lf
+
+# Config/markup files — always LF in repo
+*.md text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.env.example text eol=lf
+*.mako text eol=lf
+
+# Windows batch/shell scripts — preserve native endings
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files — no line-ending conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.whl binary
