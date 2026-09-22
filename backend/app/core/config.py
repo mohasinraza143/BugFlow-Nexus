@@ -127,7 +127,12 @@ class Settings(BaseSettings):
         credentials are passed as plain Python strings, not embedded in a URI.
         """
         if self.DATABASE_URL:
-            return make_url(self.DATABASE_URL)
+            url_str = self.DATABASE_URL
+            if url_str.startswith("postgres://"):
+                url_str = url_str.replace("postgres://", "postgresql+psycopg://", 1)
+            elif url_str.startswith("postgresql://"):
+                url_str = url_str.replace("postgresql://", "postgresql+psycopg://", 1)
+            return make_url(url_str)
 
         return URL.create(
             drivername=self.DB_DRIVER,
