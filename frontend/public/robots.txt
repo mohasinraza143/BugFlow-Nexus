@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bugflow-nexus-mohsinraza.onrender.com/sitemap.xml
