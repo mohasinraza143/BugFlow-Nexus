@@ -17,6 +17,17 @@ export const Layout: React.FC = () => {
         <main className="page-content">
           <Outlet />
         </main>
+        <footer style={{
+          textAlign: 'center',
+          padding: '1.25rem',
+          color: 'var(--text-muted)',
+          fontSize: '0.85rem',
+          borderTop: '1px solid var(--border-subtle)',
+          marginTop: 'auto',
+          backgroundColor: 'transparent'
+        }}>
+          Mohsin Raza main © 2026 BugFlow-Nexus Technologies Inc. All rights reserved.
+        </footer>
       </div>
     </div>
   );
