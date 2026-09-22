@@ -3,7 +3,7 @@ services:
   # 1. Backend API (FastAPI)
   # -------------------------
   - type: web
-    name: bugtracker-api
+    name: bugflow-nexus-api-mohsinraza
     env: python
     plan: free
     buildCommand: "cd backend && pip install -r requirements.txt"
@@ -35,7 +35,7 @@ services:
     staticPublishPath: "./frontend/dist"
     envVars:
       - key: VITE_API_BASE_URL
-        value: "https://bugtracker-api.onrender.com"
+        value: "https://bugflow-nexus-api-mohsinraza.onrender.com"
       - key: NODE_VERSION
         value: 20
     routes:
