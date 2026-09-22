@@ -815,7 +815,7 @@ export const HomePage: React.FC = () => {
 
         <div className="brand-tricolor-stripe" style={{ opacity: 0.7, marginTop: '2rem' }} />
         <div className="footer-bottom-bar">
-          <p>Mohsin Raza main © {new Date().getFullYear()} <span className="brand-tricolor-text" style={{ fontSize: '0.85rem' }}>BugFlow-Nexus</span> Technologies Inc. All rights reserved.</p>
+          <p>Mohsin Raza © {new Date().getFullYear()} <span className="brand-tricolor-text" style={{ fontSize: '0.85rem' }}>BugFlow-Nexus</span> Technologies Inc. All rights reserved.</p>
           <div className="footer-legal-links">
             <a href="#privacy">Privacy Policy</a>
             <a href="#terms">Terms of Service</a>

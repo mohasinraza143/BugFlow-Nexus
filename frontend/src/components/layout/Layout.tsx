@@ -26,7 +26,7 @@ export const Layout: React.FC = () => {
           marginTop: 'auto',
           backgroundColor: 'transparent'
         }}>
-          Mohsin Raza main © 2026 BugFlow-Nexus Technologies Inc. All rights reserved.
+          Mohsin Raza © 2026 BugFlow-Nexus Technologies Inc. All rights reserved.
         </footer>
       </div>
     </div>
