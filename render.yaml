@@ -43,5 +43,4 @@ services:
 databases:
   - name: bugtracker-db
     databaseName: bugtracker_db
-    user: postgres
     plan: free
