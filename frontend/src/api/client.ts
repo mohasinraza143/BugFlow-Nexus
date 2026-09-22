@@ -84,7 +84,7 @@ export function getApiErrorMessage(error: unknown): string {
       }
     }
     if (error.message === 'Network Error') {
-      return 'Unable to reach backend server. Please verify the API is running at http://127.0.0.1:8000 and check network connection.';
+      return 'Unable to reach backend server. Please check your network connection or try again later.';
     }
     if (error.message) {
       return error.message;
