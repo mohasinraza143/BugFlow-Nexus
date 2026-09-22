@@ -23,13 +23,13 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         # Allow Render frontend domains
-        value: "https://bugtracker-ui.onrender.com,http://localhost:5173"
+        value: "https://bugflow-nexus-mohsinraza.onrender.com,http://localhost:5173"
 
   # -------------------------
   # 2. Frontend UI (React+Vite)
   # -------------------------
   - type: web
-    name: bugtracker-ui
+    name: bugflow-nexus-mohsinraza
     env: static
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: "./frontend/dist"
