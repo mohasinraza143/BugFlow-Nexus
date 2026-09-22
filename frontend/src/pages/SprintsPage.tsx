@@ -430,14 +430,7 @@ export const SprintsPage: React.FC = () => {
   const [addingIssues, setAddingIssues] = useState(false);
   const [addIssuesError, setAddIssuesError] = useState<string | null>(null);
 
-  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
-  const [quickTitle, setQuickTitle] = useState("");
-  const [quickDesc, setQuickDesc] = useState("");
-  const [quickType, setQuickType] = useState<IssueType>("BUG");
-  const [quickPriority, setQuickPriority] = useState<Priority>("MEDIUM");
-  const [quickSeverity, setQuickSeverity] = useState<Severity>("MINOR");
-  const [quickCreating, setQuickCreating] = useState(false);
-  const [quickError, setQuickError] = useState<string | null>(null);
+
 
   const fetchData = async (silent = false) => {
     const fetchId = ++latestFetchRef.current;
@@ -719,36 +712,6 @@ export const SprintsPage: React.FC = () => {
       setAddIssuesError(getApiErrorMessage(err));
     } finally {
       setAddingIssues(false);
-    }
-  };
-
-  const handleQuickCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!addIssuesSprintId) return;
-    if (quickTitle.trim().length < 5) {
-      setQuickError("Title must be at least 5 characters.");
-      return;
-    }
-    setQuickError(null);
-    setQuickCreating(true);
-    try {
-      await issuesApi.create({
-        project_id: projectId,
-        sprint_id: addIssuesSprintId,
-        title: quickTitle.trim(),
-        description: quickDesc.trim() || "Created from Sprint Backlog",
-        issue_type: quickType,
-        priority: quickPriority,
-        severity: quickSeverity,
-      });
-      setIsQuickCreateOpen(false);
-      setQuickTitle("");
-      setQuickDesc("");
-      await fetchData(true);
-    } catch (err) {
-      setQuickError(getApiErrorMessage(err));
-    } finally {
-      setQuickCreating(false);
     }
   };
 
