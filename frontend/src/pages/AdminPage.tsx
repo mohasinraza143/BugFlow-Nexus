@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Search,
   Shield,
+  Trash2,
   TrendingUp,
   UserCheck,
   Users,
@@ -147,6 +148,9 @@ export const AdminPage: React.FC = () => {
   const [targetRole, setTargetRole] = useState<UserRole>('DEVELOPER');
   const [roleModalError, setRoleModalError] = useState<string | null>(null);
   const [isSubmittingRole, setIsSubmittingRole] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserDetail | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [deleteUserError, setDeleteUserError] = useState<string | null>(null);
 
   // ─────────────────────────────────────────
   // Data Fetchers
@@ -354,6 +358,21 @@ export const AdminPage: React.FC = () => {
       fetchUsers();
     } catch (err) {
       alert(getApiErrorMessage(err));
+    }
+  };
+
+  const handleDeleteUserConfirm = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    setDeleteUserError(null);
+    try {
+      await usersApi.delete(userToDelete.id);
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (err) {
+      setDeleteUserError(getApiErrorMessage(err));
+    } finally {
+      setIsDeletingUser(false);
     }
   };
 
@@ -1158,8 +1177,9 @@ export const AdminPage: React.FC = () => {
               <select className="form-select" style={{ width: 'auto', minWidth: '130px' }} value={usersRoleFilter} onChange={(e) => { setUsersRoleFilter(e.target.value as UserRole | ''); setUsersPage(1); }}>
                 <option value="">All Roles</option>
                 <option value="ADMIN">ADMIN</option>
-                <option value="DEVELOPER">DEVELOPER</option>
                 <option value="TESTER">TESTER</option>
+                <option value="USER">USER</option>
+                <option value="DEVELOPER">DEVELOPER</option>
               </select>
               <select className="form-select" style={{ width: 'auto', minWidth: '130px' }} value={usersActiveFilter === '' ? '' : usersActiveFilter ? 'true' : 'false'} onChange={(e) => { setUsersActiveFilter(e.target.value === '' ? '' : e.target.value === 'true'); setUsersPage(1); }}>
                 <option value="">All Statuses</option>
@@ -1209,7 +1229,7 @@ export const AdminPage: React.FC = () => {
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
                             </td>
                             <td>
-                              <span className={`user-role-badge ${u.role === 'ADMIN' ? 'role-admin' : u.role === 'DEVELOPER' ? 'role-developer' : 'role-tester'}`}>
+                              <span className={`user-role-badge ${u.role === 'ADMIN' ? 'role-admin' : u.role === 'DEVELOPER' ? 'role-developer' : u.role === 'TESTER' ? 'role-tester' : 'role-user'}`}>
                                 {u.role}
                               </span>
                             </td>
@@ -1240,6 +1260,18 @@ export const AdminPage: React.FC = () => {
                                 ) : (
                                   <button onClick={() => handleActivateUser(u)} className="btn btn-secondary btn-sm" style={{ color: '#34d399' }} title="Activate Account">
                                     <UserCheck size={13} /> Activate
+                                  </button>
+                                )}
+                                {u.id !== currentUser?.id && (
+                                  <button
+                                    onClick={() => {
+                                      setUserToDelete(u);
+                                      setDeleteUserError(null);
+                                    }}
+                                    className="btn btn-outline-danger btn-sm"
+                                    title="Delete User"
+                                  >
+                                    <Trash2 size={13} /> Delete
                                   </button>
                                 )}
                               </div>
@@ -1341,7 +1373,8 @@ export const AdminPage: React.FC = () => {
             <label className="form-label" htmlFor="new-role-select">Select New System Role</label>
             <select id="new-role-select" className="form-select" value={targetRole} onChange={(e) => setTargetRole(e.target.value as UserRole)}>
               <option value="ADMIN">ADMIN (Full management access)</option>
-              <option value="TESTER">TESTER (Issue investigation & resolution)</option>
+              <option value="TESTER">TESTER (Issue testing & validation)</option>
+              <option value="USER">USER (Standard issue reporter & collaborator)</option>
               <option value="DEVELOPER">DEVELOPER (Legacy — issue assignee)</option>
             </select>
             <span className="form-help">
@@ -1357,6 +1390,62 @@ export const AdminPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* DELETE USER CONFIRMATION MODAL          */}
+      {/* ═══════════════════════════════════════ */}
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => {
+          if (!isDeletingUser) setUserToDelete(null);
+        }}
+        title={`Delete User: ${userToDelete?.full_name}`}
+      >
+        {deleteUserError && (
+          <div className="alert-box alert-danger" style={{ marginBottom: '1rem' }}>
+            <span>{deleteUserError}</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div
+            style={{
+              padding: '0.85rem 1rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-sm)',
+              color: '#f87171',
+              fontSize: '0.85rem',
+              lineHeight: '1.5',
+            }}
+          >
+            <strong>Warning: This action will permanently remove this user account.</strong>
+            <p style={{ margin: '0.35rem 0 0 0' }}>
+              Any reported issues or activities belonging to <strong>{userToDelete?.full_name}</strong> ({userToDelete?.email}) will be safely preserved and reassigned to system administrators.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={() => setUserToDelete(null)}
+              className="btn btn-secondary"
+              disabled={isDeletingUser}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteUserConfirm}
+              className="btn btn-danger"
+              disabled={isDeletingUser}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Trash2 size={14} />
+              <span>{isDeletingUser ? 'Deleting User...' : 'Permanently Delete User'}</span>
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

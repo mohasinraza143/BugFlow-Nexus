@@ -60,12 +60,11 @@ export interface User {
   created_at: string;
 }
 
-// Backend RegisterRequest.role accepts USER or TESTER (not ADMIN or DEVELOPER).
 export interface RegisterRequest {
   full_name: string;
   email: string;
   password: string;
-  role: 'USER' | 'TESTER';
+  role: UserRole;
 }
 
 export interface LoginRequest {

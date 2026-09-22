@@ -53,4 +53,9 @@ export const usersApi = {
     const response = await apiClient.patch<UserDetail>(`/users/${id}/role`, data);
     return response.data;
   },
+
+  delete: async (id: number): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(`/users/${id}`);
+    return response.data;
+  },
 };

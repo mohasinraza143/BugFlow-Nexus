@@ -4,6 +4,10 @@ import { Menu } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleLabel } from '../../types/auth';
 
+import { NotificationCenter } from '../notifications/NotificationCenter';
+import { ThemeToggle } from '../common/ThemeToggle';
+import { UserAvatar } from '../common/UserAvatar';
+
 interface HeaderProps {
   onToggleMobile: () => void;
 }
@@ -20,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobile }) => {
     if (pathname.startsWith('/analytics')) return 'Analytics & Reporting';
     if (pathname.startsWith('/admin')) return 'Admin Center';
     if (pathname.startsWith('/profile')) return 'My Profile';
-    return 'BugTracker';
+    return 'BugFlow-Nexus';
   };
 
   /** Avatar circle color keyed by role */
@@ -49,7 +53,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobile }) => {
         </span>
       </div>
 
-      <div className="header-right">
+      <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Light/Dark Mode Switcher */}
+        <ThemeToggle />
+
+        {/* Real-time Notification Bell Center */}
+        {user && <NotificationCenter />}
+
         {/* User Pill — shows name and role */}
         {user && (
           <Link
@@ -66,24 +76,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobile }) => {
               textDecoration: 'none',
             }}
           >
-            {/* Role-coloured avatar */}
-            <span
-              style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '50%',
-                backgroundColor: getRoleColor(user.role),
-                color: '#fff',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              {user.full_name[0]?.toUpperCase() || 'U'}
-            </span>
+            {/* Dynamic Avatar */}
+            <UserAvatar
+              userId={user.id}
+              fullName={user.full_name}
+              role={user.role}
+              size={28}
+            />
 
             {/* Name + Role label */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem' }}>

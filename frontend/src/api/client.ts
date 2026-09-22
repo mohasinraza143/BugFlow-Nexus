@@ -8,8 +8,19 @@ export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
   timeout: 15000,
+});
+
+// Add interceptor to aggressively bust cache on ALL GET requests
+apiClient.interceptors.request.use((config) => {
+  if (config.method?.toUpperCase() === 'GET') {
+    config.params = { ...config.params, _t: Date.now() };
+  }
+  return config;
 });
 
 // Request Interceptor: Attach JWT token if present

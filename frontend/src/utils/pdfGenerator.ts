@@ -34,6 +34,22 @@ interface AnalyticsReportData {
 }
 
 /**
+ * Draw Indian Tricolor Header Stripe on PDF Reports
+ */
+const drawTricolorStripe = (doc: jsPDF, pageWidth: number, y: number = 0, height: number = 2.5) => {
+  const stripeW = pageWidth / 3;
+  // Saffron (Kesari)
+  doc.setFillColor(255, 103, 31);
+  doc.rect(0, y, stripeW, height, 'F');
+  // White
+  doc.setFillColor(255, 255, 255);
+  doc.rect(stripeW, y, stripeW, height, 'F');
+  // India Green
+  doc.setFillColor(4, 106, 56);
+  doc.rect(stripeW * 2, y, stripeW, height, 'F');
+};
+
+/**
  * 1. Analytics & Defect Report (Matching screenshot layout)
  */
 export const generateAnalyticsPdfReport = (data: AnalyticsReportData) => {
@@ -51,11 +67,14 @@ export const generateAnalyticsPdfReport = (data: AnalyticsReportData) => {
   doc.setFillColor(15, 23, 42); // #0f172a
   doc.rect(0, 0, pageWidth, 28, 'F');
 
+  // Indian Tricolor Top Header Stripe
+  drawTricolorStripe(doc, pageWidth, 0, 2.2);
+
   // Title
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('BUGTRACKER — ANALYTICS & DEFECT REPORT', 14, 14);
+  doc.text('BUGFLOW-NEXUS — ANALYTICS & DEFECT REPORT', 14, 15);
 
   // Subtitle
   doc.setFont('helvetica', 'normal');
@@ -336,7 +355,7 @@ export const generateAnalyticsPdfReport = (data: AnalyticsReportData) => {
     doc.setFontSize(7.5);
     doc.setTextColor(148, 163, 184);
     doc.text(
-      'BugTracker Enterprise • Confidential Quality Assurance Report • Generated from PostgreSQL Engine',
+      'BugFlow-Nexus Enterprise • Confidential Quality Assurance Report • Generated from PostgreSQL Engine',
       14,
       pageHeight - 8
     );
@@ -344,7 +363,7 @@ export const generateAnalyticsPdfReport = (data: AnalyticsReportData) => {
   }
 
   let pLabel = data.periodLabel ? data.periodLabel.replace(/\s+/g, '') : 'Generated';
-  const filename = `BugTracker_${pLabel}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+  const filename = `BugFlow_Nexus_${pLabel}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
 };
 
@@ -376,10 +395,13 @@ export const generateIssuesPdfReport = (
   doc.setFillColor(15, 23, 42); // #0f172a
   doc.rect(0, 0, pageWidth, 24, 'F');
 
+  // Indian Tricolor Top Header Stripe
+  drawTricolorStripe(doc, pageWidth, 0, 2.2);
+
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text('BUGTRACKER — DEFECT & ISSUE REGISTRY REPORT', 14, 11);
+  doc.text('BUGFLOW-NEXUS — DEFECT & ISSUE REGISTRY REPORT', 14, 12);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
@@ -458,11 +480,11 @@ export const generateIssuesPdfReport = (
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(148, 163, 184);
-    doc.text('BugTracker Enterprise • Confidential Quality Assurance Registry Report', 14, pageHeight - 6);
+    doc.text('BugFlow-Nexus Enterprise • Confidential Quality Assurance Registry Report', 14, pageHeight - 6);
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - 25, pageHeight - 6);
   }
 
-  const filename = `BugTracker_Issues_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+  const filename = `BugFlow_Nexus_Issues_Report_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
 };
 
@@ -484,10 +506,13 @@ export const generateSingleIssuePdfReport = (issue: IssueDetail, comments?: Comm
   doc.setFillColor(15, 23, 42); // #0f172a
   doc.rect(0, 0, pageWidth, 28, 'F');
 
+  // Indian Tricolor Top Header Stripe
+  drawTricolorStripe(doc, pageWidth, 0, 2.2);
+
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.text(`DEFECT AUDIT REPORT: ${issue.issue_key}`, 14, 13);
+  doc.text(`DEFECT AUDIT REPORT: ${issue.issue_key}`, 14, 14);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
@@ -645,7 +670,7 @@ export const generateSingleIssuePdfReport = (issue: IssueDetail, comments?: Comm
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(148, 163, 184);
-    doc.text('BugTracker Enterprise • Single Defect Audit Report • Generated from PostgreSQL Engine', 14, pageHeight - 8);
+    doc.text('BugFlow-Nexus Enterprise • Single Defect Audit Report • Generated from PostgreSQL Engine', 14, pageHeight - 8);
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - 25, pageHeight - 8);
   }
 

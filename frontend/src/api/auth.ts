@@ -40,4 +40,9 @@ export const authApi = {
     const response = await apiClient.post<LogoutResponse>('/auth/logout');
     return response.data;
   },
+
+  deleteAccount: async (): Promise<MessageResponse> => {
+    const response = await apiClient.delete<MessageResponse>('/auth/me');
+    return response.data;
+  },
 };

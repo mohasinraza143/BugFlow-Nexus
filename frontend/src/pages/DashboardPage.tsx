@@ -208,11 +208,40 @@ export const DashboardPage: React.FC = () => {
   }, [trendRange]);
 
   useEffect(() => {
+    let isMounted = true;
+    let timerId: number;
+
+    const pollData = async () => {
+      await loadDashboardData(true);
+      if (isMounted) {
+        timerId = window.setTimeout(pollData, 3000);
+      }
+    };
+
     loadDashboardData();
+    timerId = window.setTimeout(pollData, 3000);
+    
+    const handleFocus = () => loadDashboardData(true);
+    const handleStatusUpdate = () => loadDashboardData(true);
+    
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("issue:status-updated", handleStatusUpdate);
+    
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timerId);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("issue:status-updated", handleStatusUpdate);
+    };
   }, [loadDashboardData]);
 
   useEffect(() => {
     loadTrends();
+    const trendTimer = window.setInterval(() => {
+      loadTrends();
+    }, 10000); // Trends update slightly less often
+    
+    return () => window.clearInterval(trendTimer);
   }, [loadTrends]);
 
   // Preferences Handlers
@@ -521,7 +550,7 @@ export const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="dashboard-page-light">
+    <div className="dashboard-page" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Toast Notification Alert */}
       {actionSuccessMsg && (
         <div
@@ -574,7 +603,7 @@ export const DashboardPage: React.FC = () => {
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{user?.email}</span>
             </div>
 
-            <h1 style={{ fontSize: '1.65rem', fontWeight: '700', color: '#fff', margin: '0 0 0.35rem 0' }}>
+            <h1 style={{ fontSize: '1.65rem', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 0.35rem 0' }}>
               Welcome back, {user?.full_name}!
             </h1>
 
@@ -1356,7 +1385,7 @@ export const DashboardPage: React.FC = () => {
             padding: '0.6rem 1.25rem',
             borderBottom: '1px solid var(--border-subtle)',
             overflowX: 'auto',
-            backgroundColor: 'rgba(15, 23, 42, 0.4)',
+            backgroundColor: 'var(--bg-surface-elevated)',
           }}
         >
           {[
@@ -1379,7 +1408,7 @@ export const DashboardPage: React.FC = () => {
                 fontSize: '0.75rem',
                 fontWeight: '600',
                 borderRadius: 'var(--radius-sm)',
-                backgroundColor: selectedChip === chip.key ? 'var(--primary)' : 'var(--bg-surface-elevated)',
+                backgroundColor: selectedChip === chip.key ? 'var(--primary)' : 'var(--bg-surface)',
                 color: selectedChip === chip.key ? '#fff' : 'var(--text-secondary)',
                 border: '1px solid',
                 borderColor: selectedChip === chip.key ? 'var(--primary)' : 'var(--border-subtle)',

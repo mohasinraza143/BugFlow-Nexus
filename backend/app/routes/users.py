@@ -278,3 +278,27 @@ async def change_user_role(
         }
         background_tasks.add_task(ws_manager.send_personal_notification, notif.user_id, payload)
     return detail
+
+
+# --------------------------------------------------------------------------- #
+# DELETE /users/{user_id}                                                      #
+# --------------------------------------------------------------------------- #
+
+@router.delete(
+    "/{user_id}",
+    summary="Delete a user account",
+    responses={
+        400: {"description": "Last admin protection or invalid user"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "ADMIN access required"},
+        404: {"description": "User not found"},
+    },
+)
+async def delete_user_by_admin(
+    user_id: int,
+    current_user: User = _ADMIN,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Permanently delete a user account. **ADMIN only.**"""
+    return await user_service.delete_user(user_id, actor=current_user, db=db)
+

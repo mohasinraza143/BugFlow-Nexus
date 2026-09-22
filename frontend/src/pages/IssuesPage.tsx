@@ -6,11 +6,13 @@ import {
   Search,
   SlidersHorizontal,
   X,
+  Eye,
 } from 'lucide-react';
 import { attachmentsApi } from '../api/attachments';
 import { getApiErrorMessage } from '../api/client';
 import { issuesApi } from '../api/issues';
 import { projectsApi } from '../api/projects';
+import { usersApi } from '../api/users';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -28,6 +30,7 @@ import type {
   Severity,
 } from '../types/issue';
 import type { Project } from '../types/project';
+import type { UserDetail } from '../types/user';
 import { formatDate } from '../utils/formatters';
 import { generateIssuesPdfReport } from '../utils/pdfGenerator';
 
@@ -38,10 +41,11 @@ export const IssuesPage: React.FC = () => {
   const isUser = user?.role === 'USER';
   const isTester = user?.role === 'TESTER';
   const isAdmin = user?.role === 'ADMIN';
-  const canReport = isUser;
+  const canReport = isUser || isAdmin;
 
   const [issues, setIssues] = useState<Issue[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [developers, setDevelopers] = useState<UserDetail[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -110,9 +114,33 @@ export const IssuesPage: React.FC = () => {
     }
   };
 
+  const handleQuickAssign = async (issueId: number, developerId: number | '') => {
+    if (!developerId) return;
+    try {
+      await issuesApi.assign(issueId, { developer_id: Number(developerId) });
+      setSuccessMsg('Issue successfully assigned!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+      fetchIssues();
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err));
+    }
+  };
+
+  const fetchDevelopers = async () => {
+    if (isAdmin) {
+      try {
+        const data = await usersApi.list({ role: 'TESTER', is_active: true });
+        setDevelopers(data.items || []);
+      } catch {
+        // Ignore
+      }
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
-  }, []);
+    fetchDevelopers();
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchIssues();
@@ -122,6 +150,11 @@ export const IssuesPage: React.FC = () => {
     const params = new URLSearchParams(location.search);
     if ((params.get('create') === 'true' || params.get('new') === 'true') && canReport) {
       openReportModal();
+    }
+    const urlStatus = params.get('status');
+    if (urlStatus && !statusFilter) {
+      setStatusFilter(urlStatus as IssueStatus);
+      setShowFilters(true);
     }
   }, [location.search, canReport]);
 
@@ -485,6 +518,7 @@ export const IssuesPage: React.FC = () => {
                 <th>Priority</th>
                 <th>Status</th>
                 <th>Created</th>
+                {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -534,6 +568,33 @@ export const IssuesPage: React.FC = () => {
                   <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                     {formatDate(issue.created_at)}
                   </td>
+                  {isAdmin && (
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Link
+                          to={`/issues/${issue.id}`}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '0.2rem 0.4rem' }}
+                          title="View Details"
+                        >
+                          <Eye size={14} />
+                        </Link>
+                        <select
+                          className="form-select"
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', minWidth: '120px' }}
+                          value={issue.assignee_id || ''}
+                          onChange={(e) => handleQuickAssign(issue.id, e.target.value ? Number(e.target.value) : '')}
+                        >
+                          <option value="" disabled>Unassigned</option>
+                          {developers.map((dev) => (
+                            <option key={dev.id} value={dev.id}>
+                              {dev.full_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -239,14 +239,26 @@ async def start_sprint(db: AsyncSession, sprint_id: int, actor: User) -> Sprint:
 async def complete_sprint(db: AsyncSession, sprint_id: int, move_remaining_to_sprint_id: int | None, actor: User) -> Sprint:
     sprint = await get_sprint_by_id(db, sprint_id)
     
-    if sprint.status != SprintStatus.ACTIVE:
+    if sprint.status not in (SprintStatus.ACTIVE, SprintStatus.READY_FOR_APPROVAL):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only active sprints can be completed"
+            detail="Only ACTIVE or READY_FOR_APPROVAL sprints can be completed"
         )
 
-    # Keep all issues linked to completed sprints so their historical
-    # analytics, workload, and burndown remain available after completion.
+    # Find unfinished issues
+    unfinished_issues_result = await db.execute(
+        select(Issue).where(
+            Issue.sprint_id == sprint.id,
+            Issue.status.notin_([IssueStatus.RESOLVED, IssueStatus.CLOSED]),
+        )
+    )
+    unfinished_issues = unfinished_issues_result.scalars().all()
+    
+    # Auto-move unfinished issues to backlog (or another sprint)
+    for issue in unfinished_issues:
+        issue.sprint_id = move_remaining_to_sprint_id
+
+    # Keep only completed issues in this sprint for historical analytics
     issue_count_result = await db.execute(
         select(func.count(Issue.id)).where(Issue.sprint_id == sprint.id)
     )
@@ -258,7 +270,7 @@ async def complete_sprint(db: AsyncSession, sprint_id: int, move_remaining_to_sp
     await create_audit_log(
         db=db, actor=actor, action=AuditAction.SPRINT_COMPLETED,
         entity_type="SPRINT", entity_id=sprint.id, entity_key=sprint.name,
-        description=f"Completed sprint '{sprint.name}' with {issue_count} issues preserved for historical analytics."
+        description=f"Completed sprint '{sprint.name}'. {len(unfinished_issues)} unfinished issues auto-moved to backlog/next sprint."
     )
 
     admin_result = await db.execute(select(User.id).where(User.role == UserRole.ADMIN, User.is_active == True))
@@ -451,8 +463,8 @@ async def get_sprint_analytics(db: AsyncSession, sprint_id: int) -> SprintAnalyt
     # assigned tester, so tester-owned sprint work is visible in the chart.
     assigned_tester = aliased(User)
     workload_query = select(
-        func.coalesce(User.id, assigned_tester.id).label("developer_id"),
-        func.coalesce(User.full_name, assigned_tester.full_name).label("developer_name"),
+        func.coalesce(User.id, assigned_tester.id, 0).label("developer_id"),
+        func.coalesce(User.full_name, assigned_tester.full_name, "Unassigned").label("developer_name"),
         func.count().label("assigned_issues"),
         func.count(case((Issue.status.in_([IssueStatus.RESOLVED, IssueStatus.CLOSED]), 1))).label("completed_issues"),
         func.count(case((Issue.status.in_([
@@ -509,7 +521,12 @@ async def get_sprint_analytics(db: AsyncSession, sprint_id: int) -> SprintAnalyt
                 for iss in sprint_issues_list:
                     if iss.status in [IssueStatus.RESOLVED, IssueStatus.CLOSED]:
                         res_date = (iss.resolved_at or iss.updated_at).date()
-                        if res_date <= day_date:
+                        # If the issue was resolved on or before this day, count it.
+                        # Also, if this is the final day of a completed sprint's chart, 
+                        # count ANY resolved issue so the final drop is accurate even if resolved late.
+                        if res_date <= day_date or (
+                            day_idx == day_count and sprint.status in [SprintStatus.COMPLETED, SprintStatus.ARCHIVED]
+                        ):
                             resolved_up_to_day += 1
                 
                 ideal_remaining = max(0.0, round(total - (total / total_days) * day_idx, 1))
@@ -556,6 +573,11 @@ async def add_issue_to_sprint(db: AsyncSession, sprint_id: int, issue_id: int, a
         )
 
     issue.sprint_id = sprint.id
+    
+    if sprint.assigned_tester_id:
+        issue.assignee_id = sprint.assigned_tester_id
+        if issue.status == IssueStatus.REPORTED:
+            issue.status = IssueStatus.ASSIGNED
     
     if actor:
         await create_audit_log(
@@ -644,6 +666,16 @@ async def assign_tester(
     for issue in unassigned_issue_result.scalars().all():
         issue.sprint_id = sprint.id
 
+    # Ensure all issues in the sprint are actually assigned to this tester
+    # so they can see and update them in the workflow.
+    sprint_issues_result = await db.execute(
+        select(Issue).where(Issue.sprint_id == sprint.id)
+    )
+    for issue in sprint_issues_result.scalars().all():
+        issue.assignee_id = tester_id
+        if issue.status == IssueStatus.REPORTED:
+            issue.status = IssueStatus.ASSIGNED
+
     # Move PLANNED → ACTIVE automatically when tester is assigned
     if sprint.status == SprintStatus.PLANNED:
         sprint.status = SprintStatus.ACTIVE
@@ -656,7 +688,37 @@ async def assign_tester(
         old_values={"assigned_tester_id": old_tester_id},
         new_values={"assigned_tester_id": tester_id, "tester_name": tester.full_name},
     )
+
+    notifications = await notification_service.notify_users(
+        db=db,
+        user_ids=[tester_id],
+        notification_type=NotificationType.SPRINT_STARTED,
+        title="Assigned to new sprint",
+        message=f"You have been assigned to sprint '{sprint.name}'.",
+        actor_id=actor.id,
+        entity_type="SPRINT",
+        entity_id=sprint.id,
+        entity_key=sprint.name,
+    )
+
     await db.commit()
+
+    for notif in notifications:
+        payload = {
+            "type": "notification",
+            "data": {
+                "id": notif.id,
+                "notification_type": notif.notification_type.value,
+                "title": notif.title,
+                "message": notif.message,
+                "entity_type": notif.entity_type,
+                "entity_id": notif.entity_id,
+                "entity_key": notif.entity_key,
+                "created_at": notif.created_at.isoformat() if notif.created_at else None,
+            },
+        }
+        await ws_manager.send_personal_notification(notif.user_id, payload)
+
     return await get_sprint_by_id(db, sprint.id)
 
 
@@ -807,10 +869,18 @@ async def begin_work(
     old_status = sprint.status
     sprint.status = SprintStatus.IN_PROGRESS
 
+    # Auto-progress all ASSIGNED issues to IN_DEVELOPMENT when the sprint begins.
+    # This ensures graphs (Pie chart, Workload) instantly reflect the active work state!
+    sprint_issues_result = await db.execute(
+        select(Issue).where(Issue.sprint_id == sprint.id, Issue.status == IssueStatus.ASSIGNED)
+    )
+    for issue in sprint_issues_result.scalars().all():
+        issue.status = IssueStatus.IN_DEVELOPMENT
+
     await create_audit_log(
         db=db, actor=actor, action=AuditAction.SPRINT_UPDATED,
         entity_type="SPRINT", entity_id=sprint.id, entity_key=sprint.name,
-        description=f"Tester '{actor.full_name}' began work on sprint '{sprint.name}'",
+        description=f"Tester '{actor.full_name}' began work on sprint '{sprint.name}', auto-progressing its issues.",
         old_values={"status": old_status.value},
         new_values={"status": SprintStatus.IN_PROGRESS.value},
     )

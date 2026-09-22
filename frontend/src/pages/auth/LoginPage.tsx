@@ -1,35 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  AlertCircle,
   ArrowRight,
-  Bug,
   Eye,
   EyeOff,
-  KeyRound,
-  Loader2,
   Lock,
-  Menu,
   Mail,
-  Shield,
-  X,
+  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
 import type { User, UserRole } from '../../types/auth';
 import { storage } from '../../utils/storage';
+import { BrandLogo } from '../../components/common/BrandLogo';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 
-
-/**
- * Determines post-login redirect path based on user role.
- * ADMIN → /admin (their primary workspace)
- * TESTER / DEVELOPER → /dashboard
- * If the user had tried to access a specific page (from), honour it.
- */
 function getRoleRedirect(role: UserRole, requestedFrom: string): string {
   const isAdminPath = requestedFrom === '/admin' || requestedFrom.startsWith('/admin-dashboard');
   const isInvestigatorPath = requestedFrom === '/tester-issues' || requestedFrom.startsWith('/tester-dashboard');
-  const canAccessRequestedPath = role === 'ADMIN' ? isAdminPath : role === 'TESTER' || role === 'DEVELOPER' ? isInvestigatorPath : !isAdminPath && !isInvestigatorPath;
+  const canAccessRequestedPath =
+    role === 'ADMIN'
+      ? isAdminPath
+      : role === 'TESTER' || role === 'DEVELOPER'
+      ? isInvestigatorPath
+      : !isAdminPath && !isInvestigatorPath;
 
   if (requestedFrom && requestedFrom !== '/' && requestedFrom !== '/login' && requestedFrom !== '/register' && canAccessRequestedPath) {
     return requestedFrom;
@@ -40,22 +35,17 @@ function getRoleRedirect(role: UserRole, requestedFrom: string): string {
 }
 
 export const LoginPage: React.FC = () => {
-  const { login, logout } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const loginState = location.state as { from?: { pathname: string }; role?: UserRole } | null;
 
+  const loginState = location.state as { from?: { pathname: string }; successMessage?: string } | null;
   const rawFrom = loginState?.from?.pathname ?? '';
   const from = rawFrom !== '/' ? rawFrom : '';
 
-
-  // Password login fields
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole>(loginState?.role ?? 'TESTER');
-  // Shared state
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -68,16 +58,9 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setIsSubmitting(true);
     try {
-      // login() internally calls /auth/login and stores the user+token
       await login({ email: email.trim(), password });
-      // Read the freshly stored user to determine role-based redirect
       const freshUser: User | null = storage.getUser<User>();
       const role: UserRole = freshUser?.role ?? 'TESTER';
-      if (role !== selectedRole) {
-        await logout();
-        setError(`This account is registered as ${role}. Please select the correct role.`);
-        return;
-      }
       navigate(getRoleRedirect(role, from), { replace: true });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err));
@@ -86,269 +69,186 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const fillCredentials = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setError(null);
+  };
 
   return (
-    <div className="login-page">
-      <nav className="home-nav auth-home-nav">
-        <div className="home-nav-inner">
-          <button className="home-brand" onClick={() => navigate('/')}>
-            <span className="home-brand-mark"><Bug size={19} /></span>
-            <span>BugFlow</span>
-          </button>
+    <div className="auth-split-screen">
+      {/* Top Tricolor Brand Accent Line */}
+      <div className="brand-tricolor-stripe" />
 
-          <div className={`home-links ${menuOpen ? 'open' : ''}`}>
-            <button onClick={() => navigate('/')}>Home</button>
-            <button onClick={() => navigate('/#features')}>Features</button>
-            <button onClick={() => navigate('/#process')}>How it works</button>
-          </div>
-
-          <div className="home-actions">
-            <button className="home-start" onClick={() => navigate('/register')}>
-              Get started <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <button
-            className="home-menu"
-            onClick={() => setMenuOpen(v => !v)}
-            aria-label="Menu"
-          >
-            {menuOpen ? <X /> : <Menu />}
+      {/* Top Navbar */}
+      <nav className="auth-top-nav">
+        <div onClick={() => navigate('/')}>
+          <BrandLogo size={32} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <ThemeToggle />
+          <button className="btn-nav-secondary" onClick={() => navigate('/')}>
+            Back to Home
           </button>
         </div>
       </nav>
 
-      <div className="auth-page-wrapper login-modern">
-        <div className="auth-card" style={{ maxWidth: '440px' }}>
-        {/* Header */}
-        <div className="auth-header">
-          <div className="brand-logo auth-logo-center">
-            <Bug size={24} />
-          </div>
-          <h1 className="auth-title">BugTracker</h1>
-          <p className="auth-subtitle">
-            Software Issue Tracking & Resolution Platform
-          </p>
-        </div>
+      <div className="auth-split-container">
+        {/* Left Side: Enterprise Showcase */}
+        <div className="auth-showcase-panel">
+          <div className="showcase-content">
+            <div className="showcase-badge">
+              <Sparkles size={14} style={{ color: '#fbbf24' }} />
+              <span>Enterprise Defect Telemetry</span>
+            </div>
 
-        {/* Auth Tabs Toggle */}
-        <div
-          style={{
-            display: 'flex',
-            background: 'var(--bg-surface)',
-            borderRadius: '10px',
-            padding: '4px',
-            marginBottom: '1.5rem',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <button
-            type="button"
-            style={{
-              flex: 1,
-              padding: '0.5rem 0.75rem',
-              borderRadius: '7px',
-              border: 'none',
-              cursor: 'default',
-              fontWeight: '600',
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.4rem',
-              background: 'var(--primary)',
-              color: '#fff',
-            }}
-          >
-            <Lock size={14} />
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/register')}
-            style={{
-              flex: 1,
-              padding: '0.5rem 0.75rem',
-              borderRadius: '7px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.4rem',
-              transition: 'all 0.2s',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            Create Account
-          </button>
-        </div>
+            <h2 className="showcase-heading">
+              Accelerate QA execution with precision intelligence.
+            </h2>
 
-        <div className="form-group" style={{ marginBottom: '1rem' }}>
-          <label className="form-label" htmlFor="login-role">Login As</label>
-          <select
-            id="login-role"
-            className="form-input"
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-            disabled={isSubmitting}
-          >
-            <option value="USER">User</option>
-            <option value="TESTER">Tester</option>
-            {/* <option value="DEVELOPER">Developer</option> */}
-            <option value="ADMIN">Admin</option>
-          </select>
-        </div>
+            <p className="showcase-description">
+              Seamlessly coordinate agile sprints, auto-progress defect verification, and eliminate
+              production bottlenecks with zero latency.
+            </p>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="alert-box alert-danger">
-            <AlertCircle size={16} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
-          </div>
-        )}
+            <div className="showcase-stats-grid">
+              <div className="showcase-stat-box">
+                <span className="stat-num">99.9%</span>
+                <span className="stat-desc">Telemetry Uptime</span>
+              </div>
+              <div className="showcase-stat-box">
+                <span className="stat-num">&lt; 30ms</span>
+                <span className="stat-desc">Real-Time Sync</span>
+              </div>
+            </div>
 
-        {/* ── PASSWORD LOGIN FORM ── */}
-        <form onSubmit={handlePasswordLogin}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="login-email">
-              Email Address
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="login-email"
-                type="email"
-                required
-                className="form-input"
-                style={{ paddingLeft: '2.5rem' }}
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-                autoComplete="email"
-                autoFocus
-              />
-              <Mail
-                size={16}
-                style={{
-                  position: 'absolute',
-                  left: '0.85rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)',
-                  pointerEvents: 'none',
-                }}
-              />
+            <div className="showcase-quote-card">
+              <p>
+                "<span className="brand-tricolor-text">BugFlow-Nexus</span>'s automated sprint rollover and live burndown intelligence transformed our QA release
+                cycles completely."
+              </p>
+              <div className="quote-author">
+                <span className="author-avatar">N</span>
+                <div>
+                  <b>Nexus Engineering Lead</b>
+                  <span>FinTech Systems</span>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="login-password">
-              Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="form-input"
-                  style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  autoComplete="current-password"
-                />
-                <KeyRound
-                  size={16}
-                  style={{
-                    position: 'absolute',
-                    left: '0.85rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: 'var(--text-muted)',
-                    pointerEvents: 'none',
-                  }}
-                />
+        {/* Right Side: High-Tech Login Form Card */}
+        <div className="auth-form-panel">
+          <div className="auth-card-modern">
+            <div className="auth-header-block">
+              <h1 className="auth-card-title">Welcome Back</h1>
+              <p className="auth-card-subtitle">Sign in to your <span className="brand-tricolor-text" style={{ fontSize: '0.95rem' }}>BugFlow-Nexus</span> workspace</p>
+            </div>
+
+            {loginState?.successMessage && (
+              <div className="alert-box alert-success" style={{ marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                <CheckCircle2 size={16} /> {loginState.successMessage}
+              </div>
+            )}
+
+            {error && (
+              <div className="alert-box alert-danger" style={{ marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                {error}
+              </div>
+            )}
+
+            {/* 1-Click Demo Fill Bar */}
+            <div className="demo-credentials-section">
+              <span className="demo-label">1-CLICK QUICK ACCESS:</span>
+              <div className="demo-chips-group">
                 <button
                   type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  style={{
-                    position: 'absolute',
-                    right: '0.85rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--text-muted)',
-                    padding: 0,
-                    display: 'flex',
-                  }}
-                  tabIndex={-1}
+                  className="demo-chip admin"
+                  onClick={() => fillCredentials('admin@gmail.com', 'password123')}
+                  title="Admin Demo: admin@gmail.com / password123"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  👑 Admin (Full Access)
+                </button>
+                <button
+                  type="button"
+                  className="demo-chip tester"
+                  onClick={() => fillCredentials('test@gmail.com', 'password123')}
+                  title="QA Tester Demo: test@gmail.com / password123"
+                >
+                  🔍 QA Tester
+                </button>
+                <button
+                  type="button"
+                  className="demo-chip user"
+                  onClick={() => fillCredentials('user@gmail.com', 'password123')}
+                  title="User Demo: user@gmail.com / password123"
+                >
+                  👤 Reporter (User)
                 </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || !email.trim() || !password}
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={16} className="spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
+            <form onSubmit={handlePasswordLogin} className="auth-form-element">
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div className="input-with-icon">
+                  <Mail size={16} className="input-icon-left" />
+                  <input
+                    type="email"
+                    required
+                    className="form-input"
+                    placeholder="name@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
 
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Password</label>
+                </div>
+                <div className="input-with-icon">
+                  <Lock size={16} className="input-icon-left" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    className="form-input"
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="input-icon-right"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
 
-        {/* Footer links */}
-        <div
-          style={{
-            marginTop: '1.5rem',
-            paddingTop: '1.25rem',
-            borderTop: '1px solid var(--border-subtle)',
-            textAlign: 'center',
-            fontSize: '0.875rem',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          Don't have an account?{' '}
-          <Link to="/register" style={{ fontWeight: '600', color: 'var(--primary)' }}>
-            Create Account
-          </Link>
-        </div>
+              <button
+                type="submit"
+                className="btn-auth-submit"
+                disabled={isSubmitting}
+              >
+                <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Workspace'}</span>
+                <ArrowRight size={16} />
+              </button>
+            </form>
 
-        <div
-          style={{
-            marginTop: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-          }}
-        >
-          <Shield size={12} />
-          <span>Secure authentication · BugTracker</span>
-        </div>
+            <div className="auth-footer-link">
+              <span>Don't have an account?</span>{' '}
+              <Link to="/register">Create workspace account</Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default LoginPage;

@@ -385,11 +385,11 @@ async def close_issue(
     - **USER**: can confirm resolution of their own reported issues
     - **ADMIN**: can confirm resolution and close any issue
     """
-    if current_user.role not in (UserRole.USER, UserRole.ADMIN):
+    if current_user.role not in (UserRole.USER, UserRole.TESTER, UserRole.ADMIN):
         from fastapi import HTTPException
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only USER (reporter) or ADMIN can confirm resolution and close issues.",
+            detail="Only USER, TESTER (reporter), or ADMIN can confirm resolution and close issues.",
         )
     from app.services.websocket_manager import ws_manager
     detail, notifications = await issue_service.close_issue(issue_id, current_user, db)

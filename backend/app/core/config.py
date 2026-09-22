@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     # Application                                                          #
     # ------------------------------------------------------------------ #
-    APP_NAME: str = "BugTracker"
+    APP_NAME: str = "BugFlow-Nexus"
     APP_ENV: str = "development"
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api"
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
-    SMTP_FROM_NAME: str = "BugTracker"
+    SMTP_FROM_NAME: str = "BugFlow-Nexus"
     SMTP_USE_TLS: bool = True
 
     # ------------------------------------------------------------------ #

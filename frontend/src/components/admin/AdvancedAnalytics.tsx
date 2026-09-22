@@ -344,19 +344,19 @@ export const AdvancedAnalytics: React.FC = () => {
               {Object.keys(statusDist).length === 0 ? (
                 <div className="empty-state" style={{ minHeight: '200px' }}>No data</div>
               ) : (
-                <div style={{ height: '250px' }}>
+                <div style={{ height: '380px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={Object.entries(statusDist).map(([name, value]) => ({ name, value }))}
-                        cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value"
+                        cx="50%" cy="40%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value"
                       >
                         {Object.entries(statusDist).map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <RechartsTooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px' }} />
-                      <Legend />
+                      <Legend verticalAlign="bottom" />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -369,19 +369,19 @@ export const AdvancedAnalytics: React.FC = () => {
               {Object.keys(severityDist).length === 0 ? (
                 <div className="empty-state" style={{ minHeight: '200px' }}>No data</div>
               ) : (
-                <div style={{ height: '250px' }}>
+                <div style={{ height: '380px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={Object.entries(severityDist).map(([name, value]) => ({ name, value }))}
-                        cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value"
+                        cx="50%" cy="40%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value"
                       >
                         {Object.entries(severityDist).map(([name]) => (
                           <Cell key={`cell-${name}`} fill={SEVERITY_COLORS[name as keyof typeof SEVERITY_COLORS] || '#64748b'} />
                         ))}
                       </Pie>
                       <RechartsTooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px' }} />
-                      <Legend />
+                      <Legend verticalAlign="bottom" />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -394,19 +394,19 @@ export const AdvancedAnalytics: React.FC = () => {
               {Object.keys(priorityDist || {}).length === 0 ? (
                 <div className="empty-state" style={{ minHeight: '200px' }}>No data</div>
               ) : (
-                <div style={{ height: '250px' }}>
+                <div style={{ height: '380px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={Object.entries(priorityDist!).map(([name, value]) => ({ name, value }))}
-                        cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value"
+                        cx="50%" cy="40%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value"
                       >
                         {Object.entries(priorityDist!).map(([name]) => (
                           <Cell key={`cell-${name}`} fill={PRIORITY_COLORS[name as keyof typeof PRIORITY_COLORS] || '#64748b'} />
                         ))}
                       </Pie>
                       <RechartsTooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px' }} />
-                      <Legend />
+                      <Legend verticalAlign="bottom" />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

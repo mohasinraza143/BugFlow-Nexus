@@ -126,17 +126,29 @@ class TestJWT:
 # =========================================================================== #
 
 class TestRegistration:
-    def test_valid_developer_registration(self) -> None:
-        """POST /auth/register with DEVELOPER role returns 422 — DEVELOPER is a legacy role
-        that cannot be registered publicly. Only USER and TESTER are allowed."""
+    def test_valid_user_registration(self) -> None:
+        """POST /auth/register with USER role creates user."""
+        import uuid
         with patch("app.routes.auth.send_otp_email", new_callable=AsyncMock):
             response = client.post("/auth/register", json={
-                "full_name": "Test Developer",
-                "email": _email("dev_reg"),
+                "full_name": "Test End User",
+                "email": _email(f"user_reg_{uuid.uuid4().hex[:6]}"),
                 "password": "SecurePass123",
-                "role": "DEVELOPER",
+                "role": "USER",
             })
-        assert response.status_code == 422
+        assert response.status_code == 201
+
+    def test_valid_admin_registration(self) -> None:
+        """POST /auth/register with ADMIN role creates admin account."""
+        import uuid
+        with patch("app.routes.auth.send_otp_email", new_callable=AsyncMock):
+            response = client.post("/auth/register", json={
+                "full_name": "Admin User",
+                "email": _email(f"admin_reg_{uuid.uuid4().hex[:6]}"),
+                "password": "SecurePass123",
+                "role": "ADMIN",
+            })
+        assert response.status_code == 201
 
     def test_invalid_email_rejected(self) -> None:
         response = client.post("/auth/register", json={
@@ -169,17 +181,6 @@ class TestRegistration:
             client.post("/auth/register", json=payload)  # first
             response = client.post("/auth/register", json=payload)  # duplicate
         assert response.status_code == 409
-
-    def test_admin_registration_rejected(self) -> None:
-        """Privileged roles must be created by an administrator, not public signup."""
-        import uuid
-        response = client.post("/auth/register", json={
-            "full_name": "Admin Attempt",
-            "email": _email(f"admin_attempt_{uuid.uuid4().hex[:6]}"),
-            "password": "SecurePass123",
-            "role": "ADMIN",
-        })
-        assert response.status_code == 422
 
 
 # =========================================================================== #
@@ -593,5 +594,17 @@ class TestProfileAndChangePassword:
             "password": "NewSecretPassword123",
         })
         assert login_res.status_code == 200
+
+        # 5. Delete Account
+        del_res = client.delete("/auth/me", headers=headers)
+        assert del_res.status_code == 200
+        assert "deleted successfully" in del_res.json()["message"]
+
+        # 6. Cannot login after deletion
+        del_login = client.post("/auth/login", json={
+            "email": email,
+            "password": "NewSecretPassword123",
+        })
+        assert del_login.status_code == 401
 
 

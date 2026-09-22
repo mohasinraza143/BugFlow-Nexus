@@ -20,7 +20,7 @@ class TestRootEndpoint:
     def test_root_returns_correct_message(self) -> None:
         response = client.get("/")
         data = response.json()
-        assert data == {"message": "BugTracker API is running"}
+        assert data == {"message": "BugFlow-Nexus API is running"}
 
 
 class TestHealthEndpoint:
@@ -32,7 +32,7 @@ class TestHealthEndpoint:
         response = client.get("/health")
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["service"] == "BugTracker API"
+        assert data["service"] == "BugFlow-Nexus API"
 
     def test_health_response_has_required_keys(self) -> None:
         response = client.get("/health")

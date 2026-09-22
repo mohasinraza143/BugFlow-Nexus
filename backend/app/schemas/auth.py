@@ -23,17 +23,7 @@ class RegisterRequest(BaseModel):
     )
     email: EmailStr = Field(..., examples=["jane@example.com"])
     password: str = Field(..., min_length=8, examples=["StrongPass123"])
-    role: UserRole = Field(..., examples=["USER"])
-
-    @field_validator("role")
-    @classmethod
-    def role_must_not_be_admin(cls, v: UserRole) -> UserRole:
-        """Allow only self-service roles; privileged roles are admin-managed."""
-        if v in (UserRole.ADMIN, UserRole.DEVELOPER):
-            raise ValueError(
-                "This role cannot be registered publicly. Use USER or TESTER instead."
-            )
-        return v
+    role: UserRole = Field(default=UserRole.USER, examples=["USER"])
 
 
 class RequestOTPRequest(BaseModel):

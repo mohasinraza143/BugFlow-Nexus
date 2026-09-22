@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+  AlertTriangle,
   Calendar,
+  Camera,
   CheckCircle,
   CheckCircle2,
   Eye,
@@ -10,10 +13,14 @@ import {
   LogOut,
   Mail,
   RefreshCw,
+  RotateCcw,
   Save,
   Shield,
   ShieldCheck,
   Sliders,
+  Sparkles,
+  Trash2,
+  Upload,
   User as UserIcon,
   XCircle,
   Zap,
@@ -23,16 +30,36 @@ import { getApiErrorMessage } from '../api/client';
 import { issuesApi } from '../api/issues';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { Modal } from '../components/common/Modal';
+import { UserAvatar } from '../components/common/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
 import type { User as UserType } from '../types/auth';
 import { getRoleDescription, getRoleLabel } from '../types/auth';
+import {
+  AVATAR_PRESETS,
+  getUserAvatar,
+  removeUserAvatar,
+  setUserAvatar,
+} from '../utils/avatar';
 import { formatDate } from '../utils/formatters';
 
 export const ProfilePage: React.FC = () => {
   const { user, logout, refreshMe } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserType | null>(user);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Avatar Studio State
+  const [currentAvatar, setCurrentAvatar] = useState<string | null>(() => (user ? getUserAvatar(user.id) : null));
+  const [avatarSuccessMsg, setAvatarSuccessMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete Account State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState<string>('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState<boolean>(false);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
 
   // Edit Profile Form State
   const [fullName, setFullName] = useState<string>(user?.full_name || '');
@@ -143,6 +170,64 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  // Handle Delete Account Submit
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleteErrorMsg(null);
+
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+      setDeleteErrorMsg('Please type DELETE to confirm permanent account deletion.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      await authApi.deleteAccount();
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (err: unknown) {
+      setDeleteErrorMsg(getApiErrorMessage(err));
+      setIsDeletingAccount(false);
+    }
+  };
+
+  // Handle Avatar Selection & Upload
+  const handleSelectPreset = (presetId: string) => {
+    if (!profile) return;
+    setUserAvatar(profile.id, presetId);
+    setCurrentAvatar(presetId);
+    setAvatarSuccessMsg('Avatar changed successfully!');
+    setTimeout(() => setAvatarSuccessMsg(null), 3000);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!profile || !e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size exceeds 2MB limit. Please select a smaller photo.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setUserAvatar(profile.id, dataUrl);
+        setCurrentAvatar(dataUrl);
+        setAvatarSuccessMsg('Custom profile picture uploaded successfully!');
+        setTimeout(() => setAvatarSuccessMsg(null), 3000);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetAvatar = () => {
+    if (!profile) return;
+    removeUserAvatar(profile.id);
+    setCurrentAvatar(null);
+    setAvatarSuccessMsg('Reset avatar to default initials.');
+    setTimeout(() => setAvatarSuccessMsg(null), 3000);
+  };
+
   if (isLoading) {
     return <LoadingSpinner message="Loading user profile & account settings..." />;
   }
@@ -160,7 +245,7 @@ export const ProfilePage: React.FC = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">My Profile & Account Settings</h1>
-          <p className="page-subtitle">Manage your personal information, security credentials, and alert preferences</p>
+          <p className="page-subtitle">Manage your personal avatar, credentials, and role privileges</p>
         </div>
 
         <button onClick={fetchProfileData} className="btn btn-secondary btn-sm" title="Refresh Profile">
@@ -171,12 +256,12 @@ export const ProfilePage: React.FC = () => {
 
       {/* Top Identity & Account Overview Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        {/* User Identity Card */}
+        {/* User Identity Card & Avatar Studio */}
         <div className="card">
           <div className="card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <UserIcon size={18} color="#818cf8" />
-              <h3 className="card-title">User Information</h3>
+              <h3 className="card-title">User Information & Avatar</h3>
             </div>
             <span className="badge" style={{ backgroundColor: 'var(--primary-subtle)', color: '#818cf8', fontWeight: '700' }}>
               {profile.role}
@@ -184,24 +269,40 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.65rem',
-                  fontWeight: '800',
-                  color: '#fff',
-                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                }}
-              >
-                {profile.full_name[0]?.toUpperCase() || 'U'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+              {/* Dynamic User Avatar */}
+              <div style={{ position: 'relative' }}>
+                <UserAvatar
+                  userId={profile.id}
+                  fullName={profile.full_name}
+                  role={profile.role}
+                  size={68}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    position: 'absolute',
+                    bottom: '-4px',
+                    right: '-4px',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--primary)',
+                    color: '#ffffff',
+                    border: '2px solid var(--bg-surface)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                  }}
+                  title="Upload profile picture"
+                >
+                  <Camera size={13} />
+                </button>
               </div>
+
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>
                   {profile.full_name}
@@ -213,6 +314,109 @@ export const ProfilePage: React.FC = () => {
                   Account ID #{profile.id}
                 </span>
               </div>
+            </div>
+
+            {/* Avatar Studio Controls */}
+            <div
+              style={{
+                padding: '0.85rem',
+                backgroundColor: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Sparkles size={14} color="#818cf8" /> Avatar Presets & Custom Photo
+                </span>
+                {currentAvatar && (
+                  <button
+                    type="button"
+                    onClick={handleResetAvatar}
+                    style={{
+                      fontSize: '0.72rem',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      cursor: 'pointer',
+                    }}
+                    title="Reset to default initials"
+                  >
+                    <RotateCcw size={11} /> Reset Default
+                  </button>
+                )}
+              </div>
+
+              {avatarSuccessMsg && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    color: '#34d399',
+                    padding: '0.4rem 0.65rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.78rem',
+                    marginBottom: '0.6rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <CheckCircle2 size={13} />
+                  <span>{avatarSuccessMsg}</span>
+                </div>
+              )}
+
+              {/* Preset Avatars Row */}
+              <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                {AVATAR_PRESETS.map((preset) => {
+                  const isSelected = currentAvatar === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(preset.id)}
+                      style={{
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '50%',
+                        background: preset.bgGradient,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '17px',
+                        cursor: 'pointer',
+                        border: isSelected ? '2px solid #ffffff' : '1px solid rgba(255,255,255,0.2)',
+                        boxShadow: isSelected ? '0 0 10px rgba(99, 102, 241, 0.8)' : 'none',
+                        transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                        transition: 'transform 0.15s ease',
+                      }}
+                      title={preset.name}
+                    >
+                      {preset.emoji}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Upload Custom File Button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn btn-secondary btn-sm"
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', gap: '0.4rem' }}
+              >
+                <Upload size={13} />
+                <span>Upload Custom Photo (JPG, PNG)</span>
+              </button>
             </div>
 
             <div
@@ -626,6 +830,156 @@ export const ProfilePage: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* ── Danger Zone Card ────────────────────────────── */}
+      <div
+        className="card"
+        style={{
+          border: '1px solid rgba(239, 68, 68, 0.35)',
+          backgroundColor: 'var(--bg-surface)',
+        }}
+      >
+        <div
+          className="card-header"
+          style={{
+            borderBottom: '1px solid rgba(239, 68, 68, 0.2)',
+            backgroundColor: 'rgba(239, 68, 68, 0.05)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <AlertTriangle size={18} color="#f87171" />
+            <h3 className="card-title" style={{ color: '#f87171' }}>
+              Danger Zone
+            </h3>
+          </div>
+          <span
+            className="badge"
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              color: '#f87171',
+              fontWeight: '700',
+            }}
+          >
+            Irreversible
+          </span>
+        </div>
+
+        <div className="card-body">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)', margin: '0 0 0.25rem 0' }}>
+                Delete Personal Account
+              </h4>
+              <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '600px' }}>
+                Permanently remove your personal credentials, profile data, and session tokens. Any reported issues will be archived according to organization retention rules.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteConfirmText('');
+                setDeleteErrorMsg(null);
+                setIsDeleteModalOpen(true);
+              }}
+              className="btn btn-outline-danger"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Trash2 size={15} />
+              <span>Delete My Account</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Delete Account Confirmation Modal ─────────── */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Permanently Delete Account"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div
+            style={{
+              padding: '0.85rem 1rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-sm)',
+              color: '#f87171',
+              fontSize: '0.85rem',
+              lineHeight: '1.5',
+            }}
+          >
+            <strong>Warning: This action is permanent and cannot be undone.</strong>
+            <p style={{ margin: '0.35rem 0 0 0' }}>
+              Your account details, active sessions, and personal notification preferences will be permanently wiped.
+            </p>
+          </div>
+
+          {deleteErrorMsg && (
+            <div
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#f87171',
+                padding: '0.65rem 1rem',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <XCircle size={16} />
+              <span>{deleteErrorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="delete-confirm-input">
+                To confirm deletion, please type <strong style={{ color: 'var(--danger)' }}>DELETE</strong> below:
+              </label>
+              <input
+                id="delete-confirm-input"
+                type="text"
+                className="form-input"
+                placeholder="Type DELETE to confirm"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="btn btn-secondary"
+                disabled={isDeletingAccount}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-danger"
+                disabled={isDeletingAccount || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <Trash2 size={15} />
+                <span>{isDeletingAccount ? 'Deleting Account...' : 'Permanently Delete'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
 
     </div>
   );

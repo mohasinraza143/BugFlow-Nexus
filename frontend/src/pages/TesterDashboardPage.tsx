@@ -247,6 +247,19 @@ export const TesterDashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const refreshTimer = window.setInterval(() => {
+      loadData(true);
+    }, 3000);
+    const handleFocus = () => loadData(true);
+    
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("issue:status-updated", () => loadData(true));
+    
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("issue:status-updated", () => loadData(true));
+    };
   }, [loadData]);
 
   // ─────────────────────────────────────────────────────────────────
@@ -557,7 +570,7 @@ export const TesterDashboardPage: React.FC = () => {
               style={{
                 fontSize: '1.65rem',
                 fontWeight: '700',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 margin: '0 0 0.3rem 0',
               }}
             >

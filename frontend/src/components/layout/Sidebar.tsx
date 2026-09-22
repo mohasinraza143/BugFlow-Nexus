@@ -5,6 +5,7 @@ import {
   Bug,
   FlaskConical,
   FolderGit2,
+  Home,
   LayoutDashboard,
   LogOut,
   Shield,
@@ -13,6 +14,9 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleLabel, getRoleDescription } from '../../types/auth';
 
+import { BrandLogo } from '../common/BrandLogo';
+import { UserAvatar } from '../common/UserAvatar';
+
 interface SidebarProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
@@ -20,16 +24,6 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {
   const { user, logout } = useAuth();
-
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const getRoleBadgeClass = (role?: string) => {
     switch (role) {
@@ -56,18 +50,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
         />
       )}
       <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+        {/* Top Tricolor Brand Accent Line */}
+        <div className="brand-tricolor-stripe" />
+
         {/* Brand Header */}
-        <div className="sidebar-header">
-          <div className="brand-logo">
-            <Bug size={20} />
-          </div>
-          <span className="brand-title">BugTracker</span>
+        <div className="sidebar-header" style={{ padding: '0 1.25rem' }}>
+          <BrandLogo size={32} edition="NEXUS" />
         </div>
 
         {/* User Card */}
         {user && (
           <div className="sidebar-user-card">
-            <div className="user-avatar-circle">{getInitials(user.full_name)}</div>
+            <UserAvatar
+              userId={user.id}
+              fullName={user.full_name}
+              role={user.role}
+              size={38}
+            />
             <div className="user-info-text">
               <div className="user-display-name" title={user.full_name}>
                 {user.full_name}
@@ -110,6 +109,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 <Bug size={18} />
                 <span>My Issues</span>
               </NavLink>
+              <NavLink
+                to="/analytics"
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                onClick={onCloseMobile}
+              >
+                <BarChart3 size={18} />
+                <span>Analytics</span>
+              </NavLink>
             </>
           )}
 
@@ -117,12 +124,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
           {user?.role === 'ADMIN' && (
             <>
               <NavLink
-                to="/issues"
+                to="/admin-dashboard"
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 onClick={onCloseMobile}
               >
-                <Bug size={18} />
-                <span>Issues &amp; Defects</span>
+                <LayoutDashboard size={18} />
+                <span>Admin Dashboard</span>
               </NavLink>
 
               <NavLink
@@ -135,21 +142,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
               </NavLink>
 
               <NavLink
+                to="/issues"
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                onClick={onCloseMobile}
+              >
+                <Bug size={18} />
+                <span>Issues &amp; Defects</span>
+              </NavLink>
+
+              <NavLink
                 to="/analytics"
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 onClick={onCloseMobile}
               >
                 <BarChart3 size={18} />
                 <span>Analytics</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin-dashboard"
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                onClick={onCloseMobile}
-              >
-                <LayoutDashboard size={18} />
-                <span>Admin Dashboard</span>
               </NavLink>
 
               <NavLink
@@ -183,6 +190,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 <Bug size={18} />
                 <span>My Assigned Issues</span>
               </NavLink>
+
+              <NavLink
+                to="/analytics"
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                onClick={onCloseMobile}
+              >
+                <BarChart3 size={18} />
+                <span>Analytics</span>
+              </NavLink>
             </>
           )}
 
@@ -194,6 +210,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
           >
             <UserCheck size={18} />
             <span>My Profile</span>
+          </NavLink>
+
+          <NavLink
+            to="/"
+            className={({ isActive }) => `nav-link ${isActive && window.location.pathname === '/' ? 'active' : ''}`}
+            onClick={onCloseMobile}
+            style={{ marginTop: 'auto' }}
+          >
+            <Home size={18} />
+            <span>Go to Home Page</span>
           </NavLink>
         </nav>
 

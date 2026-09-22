@@ -26,4 +26,4 @@ router = APIRouter(tags=["Health"])
 async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     """Return API and PostgreSQL connectivity status."""
     await db.execute(text("SELECT 1"))
-    return HealthResponse(status="healthy", service="BugTracker API", database="postgresql")
+    return HealthResponse(status="healthy", service="BugFlow-Nexus API", database="postgresql")

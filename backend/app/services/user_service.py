@@ -234,7 +234,7 @@ async def activate_user(
         user_ids=[user.id],
         notification_type=NotificationType.USER_ACTIVATED,
         title="Your account has been activated",
-        message="Your BugTracker account has been activated by an administrator.",
+        message="Your BugFlow-Nexus account has been activated by an administrator.",
         actor_id=actor.id,
         entity_type="USER",
         entity_id=user.id,
@@ -298,7 +298,7 @@ async def deactivate_user(
         user_ids=[user.id],
         notification_type=NotificationType.USER_DEACTIVATED,
         title="Your account has been deactivated",
-        message="Your BugTracker account has been deactivated by an administrator.",
+        message="Your BugFlow-Nexus account has been deactivated by an administrator.",
         actor_id=actor.id,
         entity_type="USER",
         entity_id=user.id,
@@ -373,7 +373,7 @@ async def change_user_role(
         notification_type=NotificationType.USER_ROLE_CHANGED,
         title="Your role has been updated",
         message=(
-            f"Your BugTracker role has been changed from "
+            f"Your BugFlow-Nexus role has been changed from "
             f"{old_role.value} to {body.role.value}."
         ),
         actor_id=actor.id,
@@ -383,3 +383,92 @@ async def change_user_role(
     )
 
     return UserDetailResponse.model_validate(user), notifications
+
+
+# --------------------------------------------------------------------------- #
+# DELETE USER                                                                 #
+# --------------------------------------------------------------------------- #
+
+async def delete_user(
+    user_id: int,
+    actor: User,
+    db: AsyncSession,
+) -> dict:
+    """Safely delete a user account and cleanly reassign or cascade dependencies.
+    
+    Last-admin protection: Refuses to delete the last active ADMIN.
+    """
+    from sqlalchemy import delete, update
+    from app.models.issue import Issue
+    from app.models.sprint import Sprint
+    from app.models.issue_comment import IssueComment
+    from app.models.issue_attachment import IssueAttachment
+    from app.models.notification import Notification
+    from app.models.notification_preference import NotificationPreference
+    from app.models.audit_log import AuditLog
+
+    user = await _get_user_or_404(user_id, db)
+    
+    # Last-admin protection
+    if user.role == UserRole.ADMIN and user.is_active:
+        active_admin_count = await _count_active_admins(db)
+        if active_admin_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete the last active ADMIN. Promote another user to ADMIN first.",
+            )
+
+    user_email = user.email
+    user_name = user.full_name
+
+    # Find a fallback user (prefer active admin, or any other active user)
+    fallback_res = await db.execute(
+        select(User).where(User.id != user_id, User.is_active == True).order_by(User.role == UserRole.ADMIN).limit(1)
+    )
+    fallback_user = fallback_res.scalars().first()
+    fallback_id = fallback_user.id if fallback_user else None
+
+    # 1. Clean up or reassign reported issues
+    if fallback_id:
+        await db.execute(
+            update(Issue).where(Issue.reporter_id == user_id).values(reporter_id=fallback_id)
+        )
+    
+    # 2. Unassign assigned issues
+    await db.execute(
+        update(Issue).where(Issue.assignee_id == user_id).values(assignee_id=None)
+    )
+
+    # 3. Unassign assigned sprints
+    await db.execute(
+        update(Sprint).where(Sprint.assigned_tester_id == user_id).values(assigned_tester_id=None)
+    )
+
+    # 4. Reassign comments & attachments if author was deleted
+    if fallback_id:
+        await db.execute(
+            update(IssueComment).where(IssueComment.author_id == user_id).values(author_id=fallback_id)
+        )
+        await db.execute(
+            update(IssueAttachment).where(IssueAttachment.uploader_id == user_id).values(uploader_id=fallback_id)
+        )
+
+    # 5. Nullify actor on audit logs
+    await db.execute(
+        update(AuditLog).where(AuditLog.user_id == user_id).values(user_id=None)
+    )
+
+    # 6. Delete notifications and notification preferences
+    await db.execute(
+        delete(Notification).where(Notification.user_id == user_id)
+    )
+    await db.execute(
+        delete(NotificationPreference).where(NotificationPreference.user_id == user_id)
+    )
+
+    # 7. Delete the user record
+    await db.delete(user)
+    await db.commit()
+
+    return {"message": f"User account {user_email} ({user_name}) has been permanently deleted."}
+

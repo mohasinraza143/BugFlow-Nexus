@@ -392,11 +392,11 @@ async def update_issue(
     """USER/TESTER: update their own reported issue's metadata fields."""
     issue = await _get_issue_or_404(issue_id, db)
 
-    # Ownership check — only reporters can update issue metadata
-    if current_user.role in (UserRole.USER, UserRole.TESTER) and issue.reporter_id != current_user.id:
+    # Ownership check — only reporters or assignees can update issue metadata
+    if current_user.role in (UserRole.USER, UserRole.TESTER) and issue.reporter_id != current_user.id and issue.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only update issues you reported.",
+            detail="You can only update issues you reported or are assigned to.",
         )
 
     # Protected statuses — cannot update resolved/closed issues
@@ -463,14 +463,12 @@ async def update_issue(
             entity_type="ISSUE",
             entity_id=issue.id,
             entity_key=issue.issue_key,
-            description=(
-                f"{current_user.role.value.capitalize()} {current_user.full_name!r} "
-                f"updated issue {issue.issue_key}"
-            ),
+            description=f"{current_user.role.value.capitalize()} {current_user.full_name!r} updated issue {issue.issue_key}",
             old_values=old_diff,
             new_values=new_diff,
         )
 
+    await db.commit()
     return await get_issue_detail(issue_id, db)
 
 
@@ -674,6 +672,11 @@ async def update_issue_status(
     reporter_id = issue.reporter_id
     issue.status = body.status
 
+    if body.status in (IssueStatus.RESOLVED, IssueStatus.CLOSED) and not issue.resolved_at:
+        issue.resolved_at = datetime.now(UTC)
+    elif body.status not in (IssueStatus.RESOLVED, IssueStatus.CLOSED):
+        issue.resolved_at = None
+
     await db.flush()
     await db.refresh(issue)
 
@@ -715,6 +718,8 @@ async def update_issue_status(
         entity_id=issue.id,
         entity_key=issue.issue_key,
     )
+
+    await db.commit()
 
     return await get_issue_detail(issue_id, db), notifications
 
@@ -792,6 +797,8 @@ async def resolve_issue(
         entity_id=issue.id,
         entity_key=issue.issue_key,
     )
+
+    await db.commit()
 
     return await get_issue_detail(issue_id, db), notifications
 
@@ -874,6 +881,7 @@ async def reopen_issue(
         entity_key=issue.issue_key,
     )
 
+    await db.commit()
     return await get_issue_detail(issue_id, db), notifications
 
 
@@ -893,10 +901,10 @@ async def close_issue(
             detail=f"Cannot close issue in status {issue.status.value}. Only RESOLVED issues can be closed.",
         )
 
-    if current_user.role == UserRole.USER and issue.reporter_id != current_user.id:
+    if current_user.role in (UserRole.USER, UserRole.TESTER) and issue.reporter_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Users can only confirm resolution of issues they reported.",
+            detail="Users and Testers can only confirm resolution of issues they reported.",
         )
 
     old_status = issue.status
@@ -1024,6 +1032,11 @@ async def bulk_update_issues_sprint(
     updated_count = 0
     for issue in issues:
         issue.sprint_id = sprint_id
+        if target_sprint and target_sprint.assigned_tester_id:
+            issue.assignee_id = target_sprint.assigned_tester_id
+            if issue.status == IssueStatus.REPORTED:
+                issue.status = IssueStatus.ASSIGNED
+
         await create_audit_log(
             db=db,
             actor=current_user,

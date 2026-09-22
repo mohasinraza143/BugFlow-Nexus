@@ -427,3 +427,23 @@ async def change_password(
     )
 
     return MessageResponse(message="Password changed successfully.")
+
+
+# --------------------------------------------------------------------------- #
+# DELETE /auth/me                                                              #
+# --------------------------------------------------------------------------- #
+
+@router.delete(
+    "/me",
+    response_model=MessageResponse,
+    summary="Permanently delete current user account",
+)
+async def delete_my_account(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    """Permanently delete the currently authenticated user's account."""
+    from app.services.user_service import delete_user
+    res = await delete_user(current_user.id, actor=current_user, db=db)
+    return MessageResponse(message=res["message"])
+

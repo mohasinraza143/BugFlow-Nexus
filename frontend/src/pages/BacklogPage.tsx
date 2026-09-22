@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { issuesApi } from '../api/issues';
 import { SprintService } from '../services/SprintService';
-import type { Issue } from '../types/issue';
+import type { Issue, IssueDetail, Priority, Severity } from '../types/issue';
 import type { Sprint } from '../types/Sprint';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
@@ -11,7 +11,7 @@ import { getApiErrorMessage } from '../api/client';
 import { Modal } from '../components/common/Modal';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { useAuth } from '../hooks/useAuth';
-import { Search } from 'lucide-react';
+import { Edit, Plus, Search, Trash2 } from 'lucide-react';
 
 export const BacklogPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +37,16 @@ export const BacklogPage: React.FC = () => {
   const [selectedSprintId, setSelectedSprintId] = useState<number | ''>('');
   const [assignError, setAssignError] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingIssue, setEditingIssue] = useState<IssueDetail | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSeverity, setEditSeverity] = useState<Severity>('MAJOR');
+  const [editPriority, setEditPriority] = useState<Priority>('MEDIUM');
+  const [editEffort, setEditEffort] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -121,6 +131,60 @@ export const BacklogPage: React.FC = () => {
     }
   };
 
+  const handleDeleteIssue = async (issue: Issue) => {
+    if (!window.confirm(`Delete ${issue.issue_key}? This cannot be undone.`)) return;
+    try {
+      await issuesApi.delete(issue.id);
+      setSelectedIssueIds((current) => {
+        const next = new Set(current);
+        next.delete(issue.id);
+        return next;
+      });
+      await fetchData();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const openEditIssue = async (issue: Issue) => {
+    setEditError(null);
+    try {
+      const detail = await issuesApi.getById(issue.id);
+      setEditingIssue(detail);
+      setEditTitle(detail.title);
+      setEditDescription(detail.description);
+      setEditSeverity(detail.severity);
+      setEditPriority(detail.priority);
+      setEditEffort(detail.estimated_effort?.toString() || '');
+      setIsEditOpen(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingIssue) return;
+    setIsEditing(true);
+    setEditError(null);
+    try {
+      await issuesApi.update(editingIssue.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        severity: editSeverity,
+        priority: editPriority,
+        estimated_effort: editEffort ? Number(editEffort) : null,
+      });
+      setIsEditOpen(false);
+      setEditingIssue(null);
+      await fetchData();
+    } catch (err) {
+      setEditError(getApiErrorMessage(err));
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   if (isLoading && issues.length === 0) return <LoadingSpinner message="Loading backlog..." />;
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />;
 
@@ -131,11 +195,16 @@ export const BacklogPage: React.FC = () => {
           <h1 className="page-title">Project Backlog</h1>
           <p className="page-subtitle">Manage, prioritize, and assign unassigned issues to sprints.</p>
         </div>
-        {isAdmin && selectedIssueIds.size > 0 && (
-          <button className="btn btn-primary" onClick={() => setIsAssignOpen(true)}>
-            Assign {selectedIssueIds.size} Issues to Sprint
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link className="btn btn-secondary" to={`/create-issue?project_id=${projectId}`}>
+            <Plus size={16} /> Create Issue
+          </Link>
+          {isAdmin && selectedIssueIds.size > 0 && (
+            <button className="btn btn-primary" onClick={() => setIsAssignOpen(true)}>
+              Assign {selectedIssueIds.size} Issues to Sprint
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -194,6 +263,7 @@ export const BacklogPage: React.FC = () => {
                 <th>Priority</th>
                 <th>Effort</th>
                 <th>Created</th>
+                {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -231,6 +301,18 @@ export const BacklogPage: React.FC = () => {
                       {Math.floor((Date.now() - new Date(issue.created_at).getTime()) / (1000 * 3600 * 24))} days ago
                     </div>
                   </td>
+                  {isAdmin && (
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => openEditIssue(issue)} title="Edit issue">
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDeleteIssue(issue)} title="Delete issue">
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -267,6 +349,42 @@ export const BacklogPage: React.FC = () => {
             <button type="submit" className="btn btn-primary" disabled={isAssigning || !selectedSprintId}>
               {isAssigning ? 'Assigning...' : 'Assign'}
             </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title={`Edit ${editingIssue?.issue_key || 'Issue'}`}>
+        {editError && <div className="alert-box alert-danger">{editError}</div>}
+        <form onSubmit={handleEditSubmit}>
+          <div className="form-group">
+            <label className="form-label">Title *</label>
+            <input className="form-input" required minLength={5} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description *</label>
+            <textarea className="form-textarea" required minLength={10} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div className="form-group">
+              <label className="form-label">Severity</label>
+              <select className="form-select" value={editSeverity} onChange={(e) => setEditSeverity(e.target.value as Severity)}>
+                {(['MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'] as Severity[]).map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Priority</label>
+              <select className="form-select" value={editPriority} onChange={(e) => setEditPriority(e.target.value as Priority)}>
+                {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as Priority[]).map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Effort (pts)</label>
+              <input type="number" min="0" className="form-input" value={editEffort} onChange={(e) => setEditEffort(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsEditOpen(false)} disabled={isEditing}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={isEditing}>{isEditing ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>
       </Modal>

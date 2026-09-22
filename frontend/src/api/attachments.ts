@@ -49,6 +49,17 @@ export const attachmentsApi = {
     window.URL.revokeObjectURL(url);
   },
 
+  getPreviewUrl: async (attachmentId: number): Promise<string> => {
+    const response = await apiClient.get(
+      `/attachments/${attachmentId}/download`,
+      {
+        responseType: 'blob',
+      }
+    );
+    const blob = new Blob([response.data]);
+    return window.URL.createObjectURL(blob);
+  },
+
   delete: async (attachmentId: number): Promise<void> => {
     await apiClient.delete(`/attachments/${attachmentId}`);
   },

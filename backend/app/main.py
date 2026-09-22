@@ -96,4 +96,4 @@ app.include_router(export_router, prefix="/api/v1")
 @app.get("/", response_model=RootResponse, summary="Root", tags=["Root"])
 async def root() -> RootResponse:
     """Confirm the API is reachable."""
-    return RootResponse(message="BugTracker API is running")
+    return RootResponse(message="BugFlow-Nexus API is running")

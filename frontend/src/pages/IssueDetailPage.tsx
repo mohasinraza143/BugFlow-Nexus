@@ -601,7 +601,7 @@ export const IssueDetailPage: React.FC = () => {
             <div style={{ maxWidth: '650px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <CheckCircle2 size={20} color="#34d399" />
-                <h3 style={{ color: '#fff', fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>
+                <h3 style={{ color: 'var(--text-primary)', fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>
                   Has your issue been resolved?
                 </h3>
                 <span className="badge" style={{ backgroundColor: 'var(--success-subtle)', color: '#34d399', fontWeight: '600' }}>
@@ -628,25 +628,27 @@ export const IssueDetailPage: React.FC = () => {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <button
-                onClick={handleConfirmClose}
-                disabled={isActionSubmitting}
-                className="btn btn-primary"
-                style={{ backgroundColor: '#10b981', borderColor: '#10b981', fontWeight: '600' }}
-              >
-                <CheckCircle2 size={16} />
-                <span>YES — Confirm Resolution</span>
-              </button>
-              <button
-                onClick={() => setIsReopenOpen(true)}
-                disabled={isActionSubmitting}
-                className="btn btn-outline-danger"
-              >
-                <RotateCcw size={16} />
-                <span>NO — Reopen Issue</span>
-              </button>
-            </div>
+            {(user?.role === 'ADMIN' || user?.id === issue.reporter.id) && (
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <button
+                  onClick={handleConfirmClose}
+                  disabled={isActionSubmitting}
+                  className="btn btn-primary"
+                  style={{ backgroundColor: '#10b981', borderColor: '#10b981', fontWeight: '600' }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>YES — Confirm Resolution</span>
+                </button>
+                <button
+                  onClick={() => setIsReopenOpen(true)}
+                  disabled={isActionSubmitting}
+                  className="btn btn-outline-danger"
+                >
+                  <RotateCcw size={16} />
+                  <span>NO — Reopen Issue</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -897,9 +899,14 @@ export const IssueDetailPage: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                               {isImg && (
                                 <button
-                                  onClick={() => {
-                                    setPreviewImageUrl(`/api/v1/attachments/${att.id}/download`);
-                                    setPreviewImageName(att.original_filename);
+                                  onClick={async () => {
+                                    try {
+                                      const url = await attachmentsApi.getPreviewUrl(att.id);
+                                      setPreviewImageUrl(url);
+                                      setPreviewImageName(att.original_filename);
+                                    } catch (err) {
+                                      alert('Failed to load image preview');
+                                    }
                                   }}
                                   className="btn btn-secondary btn-sm"
                                   title="Preview Image"
@@ -1242,7 +1249,12 @@ export const IssueDetailPage: React.FC = () => {
       {previewImageUrl && (
         <Modal
           isOpen={true}
-          onClose={() => setPreviewImageUrl(null)}
+          onClose={() => {
+            if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
+              window.URL.revokeObjectURL(previewImageUrl);
+            }
+            setPreviewImageUrl(null);
+          }}
           title={`Preview: ${previewImageName}`}
         >
           <div style={{ textAlign: 'center' }}>
