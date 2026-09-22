@@ -5,6 +5,7 @@ services:
   - type: web
     name: bugtracker-api
     env: python
+    plan: free
     buildCommand: "cd backend && pip install -r requirements.txt"
     startCommand: "cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
