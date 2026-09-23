@@ -48,7 +48,7 @@
   background-color: var(--lp-bg);
   color: var(--lp-text-primary);
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
   line-height: 1.6;
 }
@@ -144,9 +144,10 @@
 .landing-nav {
   position: sticky;
   top: 0;
-  z-index: 40;
-  background: rgba(7, 9, 19, 0.85);
+  z-index: 1000;
+  background: rgba(7, 9, 19, 0.75);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--lp-border);
 }
 
