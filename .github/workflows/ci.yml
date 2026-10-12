@@ -1,0 +1,161 @@
+name: BugFlow-Nexus CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # =========================================================================
+  # 1. Backend CI: Python 3.12 + PostgreSQL 15 + Alembic + Pytest
+  # =========================================================================
+  backend-test:
+    name: Backend CI (FastAPI & Pytest)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: bugtracker_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: testing
+      DEBUG: "false"
+      JWT_SECRET_KEY: ci-test-secret-key-must-be-at-least-32-bytes-long!
+      DATABASE_URL: postgresql+psycopg://postgres:password@localhost:5432/bugtracker_db
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: bugtracker_db
+      PYTHONPATH: backend
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Verify Python code syntax (compileall)
+        run: |
+          python -m compileall backend/app
+
+      - name: Run database migrations (Alembic)
+        run: |
+          cd backend
+          alembic upgrade head
+
+      - name: Run backend test suite (Pytest)
+        run: |
+          cd backend
+          pytest -v tests
+
+  # =========================================================================
+  # 2. Frontend CI: Node.js 20 + Oxlint + TypeScript + Vite Build
+  # =========================================================================
+  frontend-test:
+    name: Frontend CI (React & Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint check (oxlint)
+        run: npm run lint
+
+      - name: Type check and build production bundle (tsc & vite)
+        run: npm run build
+
+  # =========================================================================
+  # 3. CD: Automated Deployment to Production
+  # =========================================================================
+  deploy:
+    name: Continuous Deployment (CD)
+    needs: [backend-test, frontend-test]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Render / Production
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_DEPLOY_HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+          RENDER_DEPLOY_HOOK_FRONTEND: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+        run: |
+          echo "=========================================="
+          echo "CI Checks Passed! Triggering Deployment..."
+          echo "=========================================="
+
+          DEPLOYED=false
+
+          # 1. Check unified deploy hook
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Triggering unified deploy hook..."
+            curl -s -f -X POST "$RENDER_DEPLOY_HOOK_URL"
+            echo "Unified deployment triggered successfully!"
+            DEPLOYED=true
+          fi
+
+          # 2. Check backend deploy hook
+          if [ -n "$RENDER_DEPLOY_HOOK_BACKEND" ]; then
+            echo "Triggering backend deploy hook..."
+            curl -s -f -X POST "$RENDER_DEPLOY_HOOK_BACKEND"
+            echo "Backend deployment triggered successfully!"
+            DEPLOYED=true
+          fi
+
+          # 3. Check frontend deploy hook
+          if [ -n "$RENDER_DEPLOY_HOOK_FRONTEND" ]; then
+            echo "Triggering frontend deploy hook..."
+            curl -s -f -X POST "$RENDER_DEPLOY_HOOK_FRONTEND"
+            echo "Frontend deployment triggered successfully!"
+            DEPLOYED=true
+          fi
+
+          # 4. If no deploy hooks are set, inform user
+          if [ "$DEPLOYED" = false ]; then
+            echo "No RENDER_DEPLOY_HOOK_* secret was configured in GitHub Repository Secrets."
+            echo "If your Render services have auto-deploy enabled on git push, Render will deploy automatically."
+            echo "To trigger instant deployment via this GitHub Action, add RENDER_DEPLOY_HOOK_URL in GitHub Secrets."
+          fi

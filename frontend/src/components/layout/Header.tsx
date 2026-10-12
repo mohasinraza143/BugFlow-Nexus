@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { Menu, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleLabel } from '../../types/auth';
 
@@ -54,6 +54,30 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobile }) => {
       </div>
 
       <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Nexus Copilot AI Button */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('copilot:open'))}
+          className="header-copilot-btn"
+          title="Open Nexus Copilot (Alt + C)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.2))',
+            border: '1px solid rgba(99, 102, 241, 0.35)',
+            color: 'var(--text-primary)',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <Sparkles size={14} color="#818cf8" />
+          <span>AI Copilot</span>
+        </button>
+
         {/* Light/Dark Mode Switcher */}
         <ThemeToggle />
 

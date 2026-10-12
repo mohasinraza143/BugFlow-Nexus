@@ -223,3 +223,26 @@ backend/storage/
 # Test attachment temp files
 backend/tests/tmp_attachments/
 
+# Local database files
+*.db
+*.sqlite3
+*.sqlite3-journal
+backend/*.db
+
+# Test runs and logs
+pytest_out*.txt
+backend/pytest_out*.txt
+*.log
+backend/*.log
+
+# Frontend build and dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Scratch & temporary helper scripts
+backend/cleanup.py
+backend/fix*.py
+backend/sync_old.py
+frontend/patch_*.py

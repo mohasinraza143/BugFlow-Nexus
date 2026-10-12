@@ -303,8 +303,8 @@ async def list_issues(
         # Users can only see their own submitted issues
         query = query.where(Issue.reporter_id == current_user.id)
     elif current_user.role == UserRole.TESTER:
-        # Testers see only issues assigned to them
-        query = query.where(Issue.assignee_id == current_user.id)
+        # Testers see issues assigned to them or reported by them
+        query = query.where(or_(Issue.assignee_id == current_user.id, Issue.reporter_id == current_user.id))
     elif current_user.role == UserRole.DEVELOPER:
         # Legacy role — assigned issues only
         query = query.where(Issue.assignee_id == current_user.id)

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { NexusCopilot } from '../copilot/NexusCopilot';
 
 export const Layout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
@@ -29,6 +30,7 @@ export const Layout: React.FC = () => {
           Mohsin Raza © 2026 BugFlow-Nexus Technologies Inc. All rights reserved.
         </footer>
       </div>
+      <NexusCopilot />
     </div>
   );
 };
