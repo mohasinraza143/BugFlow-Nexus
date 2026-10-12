@@ -276,12 +276,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 a {
@@ -312,7 +318,11 @@ textarea {
 .app-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background-color: var(--bg-app);
+  position: relative;
 }
 
 .sidebar {
@@ -523,6 +533,10 @@ textarea {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  max-width: calc(100vw - var(--sidebar-width));
+  width: calc(100vw - var(--sidebar-width));
+  overflow-x: hidden;
 }
 
 .header {
@@ -1580,6 +1594,8 @@ textarea {
 
   .main-wrapper {
     margin-left: 0;
+    max-width: 100vw;
+    width: 100%;
   }
 
   .mobile-menu-btn {
@@ -1700,8 +1716,12 @@ textarea {
 }
 
 .app-container .page-content {
-  max-width: 1500px;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
   padding: 1.75rem 2rem 3rem;
+  box-sizing: border-box;
 }
 
 .app-container .page-header {
@@ -1728,6 +1748,13 @@ textarea {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.app-container .table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app-container .card:hover,

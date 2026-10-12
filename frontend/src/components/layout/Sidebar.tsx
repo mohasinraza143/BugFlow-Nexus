@@ -207,28 +207,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
           {/* Nexus Copilot AI Assistant Quick Launch */}
           <button
             type="button"
-            className="nav-link"
-            style={{
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.18))',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              color: '#818cf8',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-              marginTop: '0.4rem',
-              marginBottom: '0.4rem',
-            }}
+            className="sidebar-copilot-btn"
             onClick={() => {
               window.dispatchEvent(new CustomEvent('copilot:open'));
               onCloseMobile();
             }}
             title="Launch Nexus Copilot (Alt + C)"
           >
-            <Sparkles size={18} color="#818cf8" />
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <span>Nexus Copilot</span>
-              <span style={{ fontSize: '0.62rem', background: '#6366f1', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>AI</span>
-            </span>
+            <Sparkles size={18} className="sidebar-copilot-icon" />
+            <span className="sidebar-copilot-title">Nexus Copilot</span>
+            <span className="sidebar-copilot-badge">AI</span>
           </button>
 
           <NavLink
