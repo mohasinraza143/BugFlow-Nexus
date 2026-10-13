@@ -9,7 +9,6 @@ import {
   Sparkles,
   CheckCircle2,
   Shield,
-  Laptop,
   UserCheck,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../../api/client';
@@ -20,10 +19,10 @@ import { BrandLogo } from '../../components/common/BrandLogo';
 import { ThemeToggle } from '../../components/common/ThemeToggle';
 
 interface RoleOption {
-  id: string;
+  id: UserRole;
   name: string;
   sub: string;
-  email: string;
+  placeholderEmail: string;
   icon: React.ReactNode;
   badgeClass: string;
 }
@@ -32,32 +31,24 @@ const ROLE_OPTIONS: RoleOption[] = [
   {
     id: 'ADMIN',
     name: 'Admin',
-    sub: 'Full Access & Management',
-    email: 'admin@gmail.com',
+    sub: 'System Administration',
+    placeholderEmail: 'admin@company.com',
     icon: <Shield size={16} />,
     badgeClass: 'role-badge-admin',
   },
   {
     id: 'TESTER',
     name: 'QA Tester',
-    sub: 'Defects & Test Cycles',
-    email: 'test@gmail.com',
+    sub: 'Defects & Verification',
+    placeholderEmail: 'tester@company.com',
     icon: <CheckCircle2 size={16} />,
     badgeClass: 'role-badge-tester',
   },
   {
-    id: 'DEVELOPER',
-    name: 'Developer',
-    sub: 'Triage & Resolution',
-    email: 'test@gmail.com',
-    icon: <Laptop size={16} />,
-    badgeClass: 'role-badge-dev',
-  },
-  {
     id: 'USER',
-    name: 'Reporter',
+    name: 'User (Reporter)',
     sub: 'Report & Track Issues',
-    email: 'user@gmail.com',
+    placeholderEmail: 'user@company.com',
     icon: <UserCheck size={16} />,
     badgeClass: 'role-badge-user',
   },
@@ -90,17 +81,15 @@ export const LoginPage: React.FC = () => {
   const rawFrom = loginState?.from?.pathname ?? '';
   const from = rawFrom !== '/' ? rawFrom : '';
 
-  const [selectedRole, setSelectedRole] = useState<string>('ADMIN');
-  const [email, setEmail] = useState<string>('admin@gmail.com');
-  const [password, setPassword] = useState<string>('password123');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('ADMIN');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleSelectRole = (opt: RoleOption) => {
     setSelectedRole(opt.id);
-    setEmail(opt.email);
-    setPassword('password123');
     setError(null);
   };
 
@@ -115,8 +104,16 @@ export const LoginPage: React.FC = () => {
     try {
       await login({ email: email.trim(), password });
       const freshUser: User | null = storage.getUser<User>();
-      const role: UserRole = freshUser?.role ?? 'TESTER';
-      navigate(getRoleRedirect(role, from), { replace: true });
+      const userRole: UserRole = freshUser?.role ?? 'USER';
+
+      // Check if user's account role matches the selected role
+      if (userRole !== selectedRole && !(selectedRole === 'TESTER' && userRole === 'DEVELOPER')) {
+        storage.clearAll();
+        setError(`This account is registered as ${userRole}, not ${selectedRole}. Please select the ${userRole === 'USER' ? 'User (Reporter)' : userRole} role.`);
+        return;
+      }
+
+      navigate(getRoleRedirect(userRole, from), { replace: true });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -248,12 +245,9 @@ export const LoginPage: React.FC = () => {
                     type="email"
                     required
                     className="form-input"
-                    placeholder="name@company.com"
+                    placeholder={activeOption ? activeOption.placeholderEmail : 'name@company.com'}
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setSelectedRole('CUSTOM');
-                    }}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -268,7 +262,7 @@ export const LoginPage: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     required
                     className="form-input"
-                    placeholder="••••••••••••"
+                    placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
