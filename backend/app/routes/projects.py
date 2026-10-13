@@ -99,3 +99,17 @@ async def deactivate_project(
 ) -> ProjectResponse:
     """Set a project to INACTIVE status. **ADMIN only.**"""
     return await project_service.deactivate_project(project_id, db, actor=current_user)
+
+
+@router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Permanently delete a project",
+)
+async def delete_project(
+    project_id: int,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Permanently delete a project and all associated issues and sprints to free database space. **ADMIN only.**"""
+    await project_service.delete_project(project_id, db, actor=current_user)

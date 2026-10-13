@@ -59,7 +59,11 @@ export const NotificationCenter: React.FC = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = window.setInterval(fetchUnreadCount, 6000);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount();
+      }
+    }, 60000);
     const handleFocus = () => fetchUnreadCount();
     window.addEventListener('focus', handleFocus);
 
@@ -196,8 +200,7 @@ export const NotificationCenter: React.FC = () => {
             style={{
               background: '#ef4444',
               color: '#ffffff',
-              boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)',
-              animation: 'sprint-pulse 2s infinite',
+              boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)',
             }}
           >
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -223,7 +226,6 @@ export const NotificationCenter: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            animation: 'dropdown-fade-in 0.2s ease-out',
           }}
         >
           {/* Header */}

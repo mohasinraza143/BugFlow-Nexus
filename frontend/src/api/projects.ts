@@ -40,4 +40,8 @@ export const projectsApi = {
     const response = await apiClient.patch<Project>(`/projects/${id}/deactivate`);
     return response.data;
   },
+
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/projects/${id}`);
+  },
 };

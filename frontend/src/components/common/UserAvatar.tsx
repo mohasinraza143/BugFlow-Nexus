@@ -10,7 +10,7 @@ interface UserAvatarProps {
   style?: React.CSSProperties;
 }
 
-export const UserAvatar: React.FC<UserAvatarProps> = ({
+export const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
   userId,
   fullName = 'User',
   role = 'USER',
@@ -130,6 +130,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
       {getInitials(fullName)}
     </div>
   );
-};
+});
+
+UserAvatar.displayName = 'UserAvatar';
 
 export default UserAvatar;

@@ -42,19 +42,11 @@
 }
 
 .nexus-trigger-icon {
-  animation: nexus-sparkle 3s ease-in-out infinite;
+  transition: transform 0.2s ease;
 }
 
-@keyframes nexus-sparkle {
-
-  0%,
-  100% {
-    transform: scale(1) rotate(0deg);
-  }
-
-  50% {
-    transform: scale(1.15) rotate(10deg);
-  }
+.nexus-trigger-btn:hover .nexus-trigger-icon {
+  transform: scale(1.12) rotate(6deg);
 }
 
 .nexus-trigger-pulse {
@@ -743,30 +735,15 @@
   height: 6px;
   border-radius: 50%;
   background-color: #818cf8;
-  animation: nexus-bounce 1.3s infinite ease-in-out;
+  opacity: 0.7;
 }
 
 .nexus-typing-dot:nth-child(2) {
-  animation-delay: 0.2s;
+  opacity: 0.85;
 }
 
 .nexus-typing-dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes nexus-bounce {
-
-  0%,
-  80%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-
-  40% {
-    transform: translateY(-5px);
-    opacity: 1;
-  }
+  opacity: 1;
 }
 
 /* 13. Footer Input Bar */

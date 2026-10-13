@@ -12,7 +12,7 @@ Phase 5: Audit logging added to create_project, update_project,
 import math
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_log import AuditAction
@@ -203,3 +203,44 @@ async def deactivate_project(project_id: int, db: AsyncSession, actor: User) -> 
     )
 
     return ProjectResponse.model_validate(project)
+
+
+async def delete_project(project_id: int, db: AsyncSession, actor: User) -> None:
+    """Permanently delete a project and all associated issues, sprints, comments, attachments. ADMIN only."""
+    project = await _get_project_or_404(project_id, db)
+    project_id_val = project.id
+    project_key = project.project_key
+
+    # Fetch all issue IDs for this project to clean up child records
+    from app.models.issue import Issue
+    issue_res = await db.execute(select(Issue.id).where(Issue.project_id == project_id_val))
+    issue_ids = issue_res.scalars().all()
+    if issue_ids:
+        from app.models.issue_comment import IssueComment
+        from app.models.issue_attachment import IssueAttachment
+        await db.execute(delete(IssueComment).where(IssueComment.issue_id.in_(issue_ids)))
+        await db.execute(delete(IssueAttachment).where(IssueAttachment.issue_id.in_(issue_ids)))
+        await db.execute(delete(Issue).where(Issue.id.in_(issue_ids)))
+
+    # Delete sprints belonging to this project
+    from app.models.sprint import Sprint
+    await db.execute(delete(Sprint).where(Sprint.project_id == project_id_val))
+
+    # Audit log (safely handled)
+    try:
+        await create_audit_log(
+            db=db,
+            actor=actor,
+            action=AuditAction.PROJECT_DEACTIVATED,
+            entity_type="PROJECT",
+            entity_id=project_id_val,
+            entity_key=project_key,
+            description=f"Admin {actor.full_name!r} permanently deleted project {project_key} from database",
+            old_values={"project_key": project_key, "name": project.name},
+        )
+    except Exception:
+        pass
+
+    # Delete project itself
+    await db.delete(project)
+    await db.commit()

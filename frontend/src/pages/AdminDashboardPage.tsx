@@ -154,12 +154,14 @@ export const AdminDashboardPage: React.FC = () => {
         inactiveList,
         unassignedList,
         logsList,
+        pendingSprints,
       ] = await Promise.all([
         adminApi.getDashboard(),
         analyticsApi.getDeveloperPerformance(),
         adminApi.getInactiveAssignees(),
         issuesApi.list({ unassigned: true, page_size: 10 }),
         auditApi.list({ page_size: 10 }),
+        SprintService.getAwaitingApprovalSprints().catch(() => []),
       ]);
 
       setStats(dashboardStats);
@@ -167,13 +169,7 @@ export const AdminDashboardPage: React.FC = () => {
       setInactiveAssignees(inactiveList.items);
       setUnassignedQueue(unassignedList.items);
       setAuditLogs(logsList.items);
-
-      // Sprint approval
-      try {
-        const pendingSprints = await SprintService.getAwaitingApprovalSprints();
-        setAwaitingApproval(pendingSprints);
-      } catch { /* non-critical */ }
-
+      setAwaitingApproval(pendingSprints || []);
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Failed to load dashboard data');
     } finally {
@@ -185,7 +181,11 @@ export const AdminDashboardPage: React.FC = () => {
   // Initial load
   useEffect(() => {
     fetchData();
-    const refreshTimer = window.setInterval(() => fetchData(true), 15000);
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchData(true);
+      }
+    }, 60000);
     return () => window.clearInterval(refreshTimer);
   }, [fetchData]);
 

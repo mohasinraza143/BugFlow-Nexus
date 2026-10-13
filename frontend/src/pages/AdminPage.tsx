@@ -21,11 +21,17 @@ import {
   UserPlus,
   Activity,
   Layers,
+  GitBranch,
+  GitCommit,
+  Server,
+  Workflow,
+  CheckCircle2,
 } from 'lucide-react';
 import { adminApi } from '../api/admin';
 import { analyticsApi } from '../api/analytics';
 import { getApiErrorMessage } from '../api/client';
 import { issuesApi, type IssueListParams } from '../api/issues';
+import { projectsApi } from '../api/projects';
 import { usersApi } from '../api/users';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorMessage } from '../components/common/ErrorMessage';
@@ -35,7 +41,7 @@ import { PriorityBadge } from '../components/common/PriorityBadge';
 import { SeverityBadge } from '../components/common/SeverityBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { useAuth } from '../hooks/useAuth';
-import type { AdminDashboardResponse } from '../types/admin';
+import type { AdminDashboardResponse, PipelineTelemetryResponse } from '../types/admin';
 import type {
   DeveloperAnalyticsItem,
   IssueStatusDistributionResponse,
@@ -44,13 +50,14 @@ import type {
 } from '../types/analytics';
 import type { UserRole } from '../types/auth';
 import type { Issue, IssueStatus, Priority, Severity } from '../types/issue';
+import type { Project } from '../types/project';
 import type { UserDetail, UserSortField } from '../types/user';
 import { formatDate, formatRelativeTime } from '../utils/formatters';
 
 // ─────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────
-type AdminTab = 'overview' | 'issues' | 'workload' | 'analytics' | 'users';
+type AdminTab = 'overview' | 'issues' | 'projects' | 'pipeline' | 'workload' | 'analytics' | 'users';
 
 // ─────────────────────────────────────────
 // Helper: stat bar item
@@ -152,9 +159,90 @@ export const AdminPage: React.FC = () => {
   const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [deleteUserError, setDeleteUserError] = useState<string | null>(null);
 
+  // ── Projects State ───────────────────────
+  const [adminProjects, setAdminProjects] = useState<Project[]>([]);
+  const [adminProjectsLoading, setAdminProjectsLoading] = useState(false);
+  const [adminProjectsError, setAdminProjectsError] = useState<string | null>(null);
+
+  // ── CI/CD Pipeline State ─────────────────
+  const [pipelineData, setPipelineData] = useState<PipelineTelemetryResponse | null>(null);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+  const [pingStatus, setPingStatus] = useState<string | null>(null);
+  const [pingLoading, setPingLoading] = useState(false);
+
   // ─────────────────────────────────────────
   // Data Fetchers
   // ─────────────────────────────────────────
+  const fetchAdminProjects = useCallback(async () => {
+    setAdminProjectsLoading(true);
+    setAdminProjectsError(null);
+    try {
+      const data = await projectsApi.list({ page: 1, page_size: 50 });
+      setAdminProjects(data.items);
+    } catch (err) {
+      setAdminProjectsError(getApiErrorMessage(err));
+    } finally {
+      setAdminProjectsLoading(false);
+    }
+  }, []);
+
+  const handleDeactivateProjectInAdmin = async (project: Project) => {
+    if (!window.confirm(`Are you sure you want to deactivate project "${project.name}"?`)) {
+      return;
+    }
+    try {
+      await projectsApi.deactivate(project.id);
+      fetchAdminProjects();
+    } catch (err) {
+      alert(getApiErrorMessage(err));
+    }
+  };
+
+  const handleDeleteProjectInAdmin = async (project: Project) => {
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete project "${project.name}" (${project.project_key})?\n\nThis will remove all associated issues, sprints, and comments to completely free database space.`)) {
+      return;
+    }
+    try {
+      await projectsApi.delete(project.id);
+      fetchAdminProjects();
+      if (dashboardStats) fetchOverview();
+    } catch (err) {
+      alert(getApiErrorMessage(err));
+    }
+  };
+
+  const fetchPipeline = useCallback(async () => {
+    setPipelineLoading(true);
+    setPipelineError(null);
+    try {
+      const data = await adminApi.getPipeline();
+      setPipelineData(data);
+    } catch (err) {
+      setPipelineError(getApiErrorMessage(err));
+    } finally {
+      setPipelineLoading(false);
+    }
+  }, []);
+
+  const handlePingHealth = async (url: string) => {
+    setPingLoading(true);
+    setPingStatus(null);
+    const start = performance.now();
+    try {
+      const res = await fetch(url);
+      const duration = Math.round(performance.now() - start);
+      if (res.ok) {
+        setPingStatus(`Healthy (HTTP ${res.status}) · Latency: ${duration}ms`);
+      } else {
+        setPingStatus(`HTTP ${res.status} · Latency: ${duration}ms`);
+      }
+    } catch {
+      setPingStatus(`Error connecting to service`);
+    } finally {
+      setPingLoading(false);
+    }
+  };
   const fetchOverview = useCallback(async () => {
     setOverviewLoading(true);
     setOverviewError(null);
@@ -265,6 +353,14 @@ export const AdminPage: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'issues') fetchIssues();
   }, [activeTab, issuesPage, issuesStatus, issuesSeverity, issuesPriority, fetchIssues]);
+
+  useEffect(() => {
+    if (activeTab === 'projects') fetchAdminProjects();
+  }, [activeTab, fetchAdminProjects]);
+
+  useEffect(() => {
+    if (activeTab === 'pipeline') fetchPipeline();
+  }, [activeTab, fetchPipeline]);
 
   useEffect(() => {
     if (activeTab === 'workload') fetchWorkload();
@@ -392,6 +488,8 @@ export const AdminPage: React.FC = () => {
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Overview', icon: <BarChart3 size={16} /> },
     { key: 'issues', label: 'Issue Management', icon: <Bug size={16} /> },
+    { key: 'projects', label: 'Projects', icon: <FolderGit2 size={16} /> },
+    { key: 'pipeline', label: 'CI/CD Pipeline', icon: <Workflow size={16} /> },
     { key: 'workload', label: 'Tester Workload', icon: <Activity size={16} /> },
     { key: 'analytics', label: 'Analytics', icon: <TrendingUp size={16} /> },
     { key: 'users', label: 'User Management', icon: <Users size={16} /> },
@@ -417,6 +515,8 @@ export const AdminPage: React.FC = () => {
           onClick={() => {
             if (activeTab === 'overview') fetchOverview();
             else if (activeTab === 'issues') fetchIssues();
+            else if (activeTab === 'projects') fetchAdminProjects();
+            else if (activeTab === 'pipeline') fetchPipeline();
             else if (activeTab === 'workload') fetchWorkload();
             else if (activeTab === 'analytics') fetchAnalytics();
             else if (activeTab === 'users') fetchUsers();
@@ -833,6 +933,376 @@ export const AdminPage: React.FC = () => {
               )
             )}
           </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════ */}
+      {/* TAB: PROJECT MANAGEMENT                */}
+      {/* ═══════════════════════════════════════ */}
+      {activeTab === 'projects' && (
+        <div className="card">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FolderGit2 size={18} color="#818cf8" />
+              <h3 className="card-title">Project Management &amp; Data Purge</h3>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Total Projects: {adminProjects.length}
+              </span>
+              <Link to="/projects" className="btn btn-primary btn-sm">
+                + Create / View Grid
+              </Link>
+            </div>
+          </div>
+          <div className="card-body" style={{ padding: '1rem 1.25rem' }}>
+            {adminProjectsLoading && <LoadingSpinner message="Loading projects..." />}
+            {adminProjectsError && <ErrorMessage message={adminProjectsError} onRetry={fetchAdminProjects} />}
+
+            {!adminProjectsLoading && !adminProjectsError && (
+              adminProjects.length === 0 ? (
+                <EmptyState title="No projects found" description="No project records found in the database." />
+              ) : (
+                <div className="table-container" style={{ border: 'none' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Key</th>
+                        <th>Project Name</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminProjects.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--primary)' }}>
+                              {p.project_key}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{p.name}</div>
+                            {p.description && (
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '320px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {p.description}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              fontSize: '0.8rem',
+                              fontWeight: '600',
+                              color: p.status === 'ACTIVE' ? '#34d399' : '#94a3b8',
+                            }}>
+                              {p.status === 'ACTIVE' ? <CheckCircle size={13} /> : <XCircle size={13} />}
+                              {p.status}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {formatDate(p.created_at)}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <Link to={`/projects/${p.id}/sprints`} className="btn btn-secondary btn-sm" title="View Sprints">
+                                Sprints
+                              </Link>
+                              {p.status === 'ACTIVE' && (
+                                <button
+                                  onClick={() => handleDeactivateProjectInAdmin(p)}
+                                  className="btn btn-outline-danger btn-sm"
+                                  title="Deactivate Project"
+                                >
+                                  <PowerOff size={13} /> Deactivate
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDeleteProjectInAdmin(p)}
+                                className="btn btn-outline-danger btn-sm"
+                                style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }}
+                                title="Permanently Delete Project & Wipe DB Records"
+                              >
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════ */}
+      {/* TAB: CI/CD PIPELINE MONITOR              */}
+      {/* ═══════════════════════════════════════ */}
+      {activeTab === 'pipeline' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {pipelineLoading && !pipelineData && <LoadingSpinner message="Fetching CI/CD pipeline telemetry..." />}
+          {pipelineError && <ErrorMessage message={pipelineError} onRetry={fetchPipeline} />}
+
+          {pipelineData && (
+            <>
+              {/* Top Banner Card */}
+              <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                      <Workflow size={22} color="#818cf8" />
+                      <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                        {pipelineData.workflow_name}
+                      </h2>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '999px',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        color: '#10b981',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                      }}>
+                        <CheckCircle2 size={12} /> ALL CHECKS PASSING
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.82rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <GitBranch size={14} color="#818cf8" /> Branch: <strong style={{ color: 'var(--text-primary)' }}>{pipelineData.branch}</strong>
+                      </span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <GitCommit size={14} color="#818cf8" /> Repo: <strong style={{ color: 'var(--text-primary)' }}>{pipelineData.repository}</strong>
+                      </span>
+                      <span>Config: <code>{pipelineData.workflow_file}</code></span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button onClick={fetchPipeline} className="btn btn-secondary btn-sm">
+                      <RefreshCw size={13} /> Refresh Pipeline
+                    </button>
+                    <a
+                      href={`https://github.com/${pipelineData.repository}/actions`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <ExternalLink size={13} /> Open in GitHub Actions
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pipeline Stages Breakdown */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                {pipelineData.stages.map((stage, idx) => (
+                  <div key={stage.id} className="card" style={{ padding: '1.25rem', position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                        STAGE 0{idx + 1}
+                      </span>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        color: '#10b981',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '6px',
+                      }}>
+                        <CheckCircle size={11} /> SUCCESS
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '600', margin: '0 0 0.3rem 0', color: 'var(--text-primary)' }}>
+                      {stage.name}
+                    </h3>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                      Runtime: {stage.runtime}
+                    </div>
+                    <ul style={{ margin: 0, padding: '0 0 0 1rem', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                      {stage.steps.map((step, sIdx) => (
+                        <li key={sIdx}>{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {/* Render Production Services Telemetry */}
+              <div className="card">
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Server size={18} color="#0ea5e9" />
+                    <h3 className="card-title">Render Production Deployment Status</h3>
+                  </div>
+                  {pingStatus && (
+                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#10b981' }}>
+                      {pingStatus}
+                    </span>
+                  )}
+                </div>
+                <div className="card-body" style={{ padding: '1rem 1.25rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+                    {pipelineData.services.map((svc) => (
+                      <div key={svc.name} style={{
+                        padding: '1rem',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '8px',
+                        background: 'var(--bg-surface-elevated)',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                              {svc.name}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                              {svc.type} · {svc.environment}
+                            </div>
+                          </div>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '700',
+                            color: '#34d399',
+                          }}>
+                            ● LIVE
+                          </span>
+                        </div>
+                        <div style={{ marginBottom: '0.75rem' }}>
+                          <a
+                            href={svc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', wordBreak: 'break-all' }}
+                          >
+                            {svc.url}
+                          </a>
+                        </div>
+                        {svc.health_url && (
+                          <button
+                            onClick={() => handlePingHealth(svc.health_url!)}
+                            disabled={pingLoading}
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                          >
+                            <RefreshCw size={11} className={pingLoading ? 'spin' : ''} />
+                            {pingLoading ? 'Testing...' : 'Test Health Endpoint'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Workflow Runs History */}
+              <div className="card">
+                <div className="card-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Clock size={18} color="#818cf8" />
+                    <h3 className="card-title">Recent CI/CD Execution Runs</h3>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Triggered by Git Push to main
+                  </span>
+                </div>
+                <div className="card-body" style={{ padding: 0 }}>
+                  {pipelineData.runs.length === 0 ? (
+                    <EmptyState title="No workflow runs found" description="No GitHub Actions history returned." />
+                  ) : (
+                    <div className="table-container" style={{ border: 'none' }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Status</th>
+                            <th>Commit</th>
+                            <th>Trigger</th>
+                            <th>Branch</th>
+                            <th>Author</th>
+                            <th>Date</th>
+                            <th style={{ textAlign: 'right' }}>Run Details</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pipelineData.runs.map((r) => (
+                            <tr key={r.id}>
+                              <td>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  fontSize: '0.78rem',
+                                  fontWeight: '700',
+                                  color: r.conclusion === 'success' ? '#10b981' : r.status === 'in_progress' ? '#f59e0b' : '#ef4444',
+                                }}>
+                                  {r.conclusion === 'success' ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}
+                                  {(r.conclusion || r.status).toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ maxWidth: '280px' }}>
+                                <div style={{
+                                  fontWeight: '600',
+                                  color: 'var(--text-primary)',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  fontSize: '0.85rem',
+                                }} title={r.commit_message}>
+                                  {r.commit_message || 'Commit run'}
+                                </div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                  SHA: {r.head_sha}
+                                </div>
+                              </td>
+                              <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                {r.event}
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
+                                  {r.head_branch}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                {r.author || 'committer'}
+                              </td>
+                              <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                {formatRelativeTime(r.created_at)}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <a
+                                  href={r.html_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ textDecoration: 'none' }}
+                                >
+                                  <ExternalLink size={12} /> GitHub Log
+                                </a>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

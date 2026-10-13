@@ -19,7 +19,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => storage.getUser<User>());
   const [token, setToken] = useState<string | null>(() => storage.getToken());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!storage.getToken() && !storage.getUser());
 
   const refreshMe = useCallback(async () => {
     const currentToken = storage.getToken();

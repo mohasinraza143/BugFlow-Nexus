@@ -218,11 +218,12 @@ export const TesterDashboardPage: React.FC = () => {
     setError(null);
 
     try {
-      const [issuesRes, statusRes, sevRes, priRes] = await Promise.all([
+      const [issuesRes, statusRes, sevRes, priRes, sprints] = await Promise.all([
         issuesApi.list({ page_size: 100 }),
         analyticsApi.getStatusDistribution(),
         analyticsApi.getSeverityDistribution(),
         analyticsApi.getPriorityDistribution(),
+        SprintService.getAssignedSprints().catch(() => []),
       ]);
 
       setIssues(issuesRes.items || []);
@@ -230,13 +231,7 @@ export const TesterDashboardPage: React.FC = () => {
       setStatusDist(statusRes);
       setSeverityDist(sevRes);
       setPriorityDist(priRes);
-
-      // Load assigned sprints (non-critical)
-      try {
-        const sprints = await SprintService.getAssignedSprints();
-        setAssignedSprints(sprints);
-      } catch { /* ignore */ }
-
+      setAssignedSprints(sprints || []);
     } catch (err: unknown) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -248,17 +243,17 @@ export const TesterDashboardPage: React.FC = () => {
   useEffect(() => {
     loadData();
     const refreshTimer = window.setInterval(() => {
-      loadData(true);
-    }, 3000);
-    const handleFocus = () => loadData(true);
-    
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("issue:status-updated", () => loadData(true));
-    
+      if (document.visibilityState === 'visible') {
+        loadData(true);
+      }
+    }, 60000);
+    const handleStatusUpdate = () => loadData(true);
+
+    window.addEventListener("issue:status-updated", handleStatusUpdate);
+
     return () => {
       window.clearInterval(refreshTimer);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("issue:status-updated", () => loadData(true));
+      window.removeEventListener("issue:status-updated", handleStatusUpdate);
     };
   }, [loadData]);
 

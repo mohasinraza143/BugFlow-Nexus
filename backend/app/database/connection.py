@@ -35,7 +35,7 @@ if sys.platform == "win32":
 
 engine: AsyncEngine = create_async_engine(
     settings.sqlalchemy_url,       # URL built via URL.create() — no parsing issues
-    echo=settings.DEBUG,           # Log SQL statements in development
+    echo=False,                    # Zero console I/O latency during API requests
     pool_pre_ping=True,            # Verify connections before use
     pool_size=20,
     max_overflow=10,

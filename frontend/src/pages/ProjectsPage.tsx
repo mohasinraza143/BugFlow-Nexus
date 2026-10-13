@@ -9,6 +9,7 @@ import {
   Calendar,
   Edit2,
   PowerOff,
+  Trash2,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../api/client';
 import { projectsApi } from '../api/projects';
@@ -145,6 +146,18 @@ export const ProjectsPage: React.FC = () => {
     }
     try {
       await projectsApi.deactivate(project.id);
+      fetchProjects();
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err));
+    }
+  };
+
+  const handleDelete = async (project: Project) => {
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete project "${project.name}" (${project.project_key})?\n\nThis will remove all associated issues, sprints, and comments to completely free database space.`)) {
+      return;
+    }
+    try {
+      await projectsApi.delete(project.id);
       fetchProjects();
     } catch (err: unknown) {
       alert(getApiErrorMessage(err));
@@ -365,6 +378,16 @@ export const ProjectsPage: React.FC = () => {
                       Deactivate
                     </button>
                   )}
+
+                  <button
+                    onClick={() => handleDelete(project)}
+                    className="btn btn-outline-danger btn-sm"
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }}
+                    title="Permanently Delete Project"
+                  >
+                    <Trash2 size={13} />
+                    Delete
+                  </button>
                 </div>
               )}
               

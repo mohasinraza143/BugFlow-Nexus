@@ -5,8 +5,7 @@ import { RoleProtectedRoute } from '../components/common/RoleProtectedRoute';
 const Layout = lazy(() => import('../components/layout/Layout').then(m => ({ default: m.Layout })));
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
-// Lazy-loaded page components for fast initial load
-const HomePage = lazy(() => import('../pages/HomePage').then(m => ({ default: m.HomePage })));
+import { HomePage } from '../pages/HomePage';
 const LoginPage = lazy(() => import('../pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));

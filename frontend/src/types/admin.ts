@@ -83,3 +83,46 @@ export interface AdminDashboardResponse {
   notifications: NotificationStats;
   content: ContentStats;
 }
+
+export interface PipelineRun {
+  id: number;
+  name: string;
+  head_branch: string;
+  head_sha: string;
+  event: string;
+  status: string;
+  conclusion: string | null;
+  html_url: string;
+  created_at: string;
+  updated_at: string;
+  run_started_at?: string;
+  commit_message: string;
+  author: string;
+}
+
+export interface PipelineStage {
+  id: string;
+  name: string;
+  runtime: string;
+  steps: string[];
+  status: 'passed' | 'running' | 'failed' | 'queued';
+}
+
+export interface RenderServiceInfo {
+  name: string;
+  url: string;
+  health_url?: string;
+  type: string;
+  environment: string;
+}
+
+export interface PipelineTelemetryResponse {
+  repository: string;
+  workflow_name: string;
+  branch: string;
+  github_reachable: boolean;
+  workflow_file: string;
+  stages: PipelineStage[];
+  services: RenderServiceInfo[];
+  runs: PipelineRun[];
+}

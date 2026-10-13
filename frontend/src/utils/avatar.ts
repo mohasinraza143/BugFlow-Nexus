@@ -23,10 +23,18 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
 
 export const AVATAR_EVENT_NAME = 'bugflow_avatar_update';
 
+const avatarCache = new Map<string, string | null>();
+
 export function getUserAvatar(userId?: number | string): string | null {
   if (!userId) return null;
+  const key = `bugflow_avatar_${userId}`;
+  if (avatarCache.has(key)) {
+    return avatarCache.get(key) || null;
+  }
   try {
-    return localStorage.getItem(`bugflow_avatar_${userId}`);
+    const val = localStorage.getItem(key);
+    avatarCache.set(key, val);
+    return val;
   } catch {
     return null;
   }
@@ -34,7 +42,9 @@ export function getUserAvatar(userId?: number | string): string | null {
 
 export function setUserAvatar(userId: number | string, avatarValue: string): void {
   try {
-    localStorage.setItem(`bugflow_avatar_${userId}`, avatarValue);
+    const key = `bugflow_avatar_${userId}`;
+    avatarCache.set(key, avatarValue);
+    localStorage.setItem(key, avatarValue);
     window.dispatchEvent(new CustomEvent(AVATAR_EVENT_NAME, { detail: { userId, avatar: avatarValue } }));
   } catch (e) {
     console.error('Failed to save user avatar:', e);
@@ -43,7 +53,9 @@ export function setUserAvatar(userId: number | string, avatarValue: string): voi
 
 export function removeUserAvatar(userId: number | string): void {
   try {
-    localStorage.removeItem(`bugflow_avatar_${userId}`);
+    const key = `bugflow_avatar_${userId}`;
+    avatarCache.delete(key);
+    localStorage.removeItem(key);
     window.dispatchEvent(new CustomEvent(AVATAR_EVENT_NAME, { detail: { userId, avatar: null } }));
   } catch (e) {
     console.error('Failed to remove user avatar:', e);

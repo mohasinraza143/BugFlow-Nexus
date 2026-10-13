@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AxiosError } from 'axios';
+import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { storage } from '../utils/storage';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -8,24 +8,80 @@ export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
   },
-  timeout: 60000,
+  timeout: 30000,
 });
 
-// Add interceptor to aggressively bust cache on ALL GET requests
-apiClient.interceptors.request.use((config) => {
-  if (config.method?.toUpperCase() === 'GET') {
-    config.params = { ...config.params, _t: Date.now() };
+
+// In-flight GET request deduplication & in-memory cache (5s TTL)
+interface CacheEntry {
+  data: any;
+  status: number;
+  statusText: string;
+  headers: any;
+  config: any;
+  expires: number;
+}
+
+const apiGetCache = new Map<string, CacheEntry>();
+const inFlightGetRequests = new Map<string, Promise<any>>();
+
+export const clearApiCache = () => {
+  apiGetCache.clear();
+};
+
+const originalGet = apiClient.get.bind(apiClient);
+
+apiClient.get = (function <T = any, R = AxiosResponse<T>, D = any>(
+  url: string,
+  config?: AxiosRequestConfig<D>
+): Promise<R> {
+  const isNoCache = config?.headers && (config.headers as any)['Cache-Control'] === 'no-cache';
+  if (isNoCache) {
+    return originalGet(url, config) as Promise<R>;
   }
-  return config;
-});
 
-// Request Interceptor: Attach JWT token if present
+  const token = storage.getToken() || '';
+  const cacheKey = `${url}?${JSON.stringify(config?.params || {})}:${token}`;
+
+  const cached = apiGetCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && cached.expires > now) {
+    return Promise.resolve(cached as unknown as R);
+  }
+
+  const existingPromise = inFlightGetRequests.get(cacheKey);
+  if (existingPromise) {
+    return existingPromise as Promise<R>;
+  }
+
+  const requestPromise = originalGet(url, config)
+    .then((response) => {
+      apiGetCache.set(cacheKey, {
+        data: (response as any).data,
+        status: (response as any).status,
+        statusText: (response as any).statusText,
+        headers: (response as any).headers,
+        config: (response as any).config,
+        expires: Date.now() + 5000,
+      });
+      return response;
+    })
+    .finally(() => {
+      inFlightGetRequests.delete(cacheKey);
+    });
+
+  inFlightGetRequests.set(cacheKey, requestPromise);
+  return requestPromise as Promise<R>;
+}) as typeof apiClient.get;
+
+// Request Interceptor: Attach JWT token if present and clear cache on mutations
 apiClient.interceptors.request.use(
   (config) => {
+    const method = config.method?.toLowerCase();
+    if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+      clearApiCache();
+    }
     const token = storage.getToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -44,6 +100,7 @@ apiClient.interceptors.response.use(
       const requestUrl = error.config?.url || '';
       if (!requestUrl.includes('/auth/login')) {
         storage.clearAll();
+        clearApiCache();
         // Dispatch custom event so AuthContext can handle logout gracefully
         window.dispatchEvent(new Event('auth:unauthorized'));
       }

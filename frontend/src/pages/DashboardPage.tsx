@@ -123,46 +123,33 @@ export const DashboardPage: React.FC = () => {
     setError(null);
 
     try {
-      // 1. Fetch user's scoped issues list
-      const issuesRes = await issuesApi.list({ page_size: 100 });
-      setUserIssues(issuesRes.items || []);
-      setTotalIssueCount(issuesRes.total || 0);
-
-      // 2. Fetch scoped status, severity, and priority distributions
-      const [distRes, sevRes, priRes] = await Promise.all([
+      // Fetch all dashboard metrics concurrently in parallel
+      const [
+        issuesRes,
+        distRes,
+        sevRes,
+        priRes,
+        projRes,
+        projsList,
+        sysRes,
+      ] = await Promise.all([
+        issuesApi.list({ page_size: 100 }),
         analyticsApi.getStatusDistribution(),
         analyticsApi.getSeverityDistribution(),
         analyticsApi.getPriorityDistribution(),
+        analyticsApi.getAllProjectsAnalytics().catch(() => ({ items: [] })),
+        projectsApi.list({ page_size: 50 }).catch(() => ({ items: [] })),
+        isAdmin ? analyticsApi.getSystemOverview().catch(() => null) : Promise.resolve(null),
       ]);
+
+      setUserIssues(issuesRes.items || []);
+      setTotalIssueCount(issuesRes.total || 0);
       setStatusDist(distRes);
       setSeverityDist(sevRes);
       setPriorityDist(priRes);
-
-      // 3. Fetch Project Analytics for My Projects breakdown
-      try {
-        const projRes = await analyticsApi.getAllProjectsAnalytics();
-        setProjectAnalytics(projRes.items || []);
-      } catch {
-        // Fallback gracefully
-      }
-
-      // 4. Fetch Projects for dropdown filtering
-      try {
-        const projsList = await projectsApi.list({ page_size: 50 });
-        setProjects(projsList.items || []);
-      } catch {
-        // Soft fail
-      }
-
-      // 5. Global overview for Admin role
-      if (isAdmin) {
-        try {
-          const sysRes = await analyticsApi.getSystemOverview();
-          setSystemStats(sysRes);
-        } catch {
-          // Soft fail
-        }
-      }
+      setProjectAnalytics(projRes.items || []);
+      setProjects(projsList.items || []);
+      if (sysRes) setSystemStats(sysRes);
     } catch (err: unknown) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -212,25 +199,23 @@ export const DashboardPage: React.FC = () => {
     let timerId: number;
 
     const pollData = async () => {
-      await loadDashboardData(true);
+      if (document.visibilityState === 'visible') {
+        await loadDashboardData(true);
+      }
       if (isMounted) {
-        timerId = window.setTimeout(pollData, 3000);
+        timerId = window.setTimeout(pollData, 60000);
       }
     };
 
     loadDashboardData();
-    timerId = window.setTimeout(pollData, 3000);
+    timerId = window.setTimeout(pollData, 60000);
     
-    const handleFocus = () => loadDashboardData(true);
     const handleStatusUpdate = () => loadDashboardData(true);
-    
-    window.addEventListener("focus", handleFocus);
     window.addEventListener("issue:status-updated", handleStatusUpdate);
     
     return () => {
       isMounted = false;
       window.clearTimeout(timerId);
-      window.removeEventListener("focus", handleFocus);
       window.removeEventListener("issue:status-updated", handleStatusUpdate);
     };
   }, [loadDashboardData]);
@@ -238,8 +223,10 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     loadTrends();
     const trendTimer = window.setInterval(() => {
-      loadTrends();
-    }, 10000); // Trends update slightly less often
+      if (document.visibilityState === 'visible') {
+        loadTrends();
+      }
+    }, 60000);
     
     return () => window.clearInterval(trendTimer);
   }, [loadTrends]);
