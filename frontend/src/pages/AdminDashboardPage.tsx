@@ -28,7 +28,8 @@ import { PriorityBadge } from '../components/common/PriorityBadge';
 import { SeverityBadge } from '../components/common/SeverityBadge';
 const AdvancedAnalytics = lazy(() => import('../components/admin/AdvancedAnalytics').then(m => ({ default: m.AdvancedAnalytics })));
 import { SprintService } from '../services/SprintService';
-import type { AdminDashboardResponse, InactiveAssigneeItem } from '../types/admin';
+import { CiCdPipelineSection } from '../components/admin/CiCdPipelineSection';
+import type { AdminDashboardResponse, InactiveAssigneeItem, PipelineTelemetryResponse } from '../types/admin';
 import type { DeveloperAnalyticsItem } from '../types/analytics';
 import type { AuditLogItem } from '../types/audit';
 import type { Issue } from '../types/issue';
@@ -123,8 +124,8 @@ export const AdminDashboardPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Data state
   const [stats, setStats] = useState<AdminDashboardResponse | null>(null);
+  const [pipelineData, setPipelineData] = useState<PipelineTelemetryResponse | null>(null);
   const [workloads, setWorkloads] = useState<DeveloperAnalyticsItem[]>([]);
   const [inactiveAssignees, setInactiveAssignees] = useState<InactiveAssigneeItem[]>([]);
   const [unassignedQueue, setUnassignedQueue] = useState<Issue[]>([]);
@@ -155,6 +156,7 @@ export const AdminDashboardPage: React.FC = () => {
         unassignedList,
         logsList,
         pendingSprints,
+        pipelineTelemetry,
       ] = await Promise.all([
         adminApi.getDashboard(),
         analyticsApi.getDeveloperPerformance(),
@@ -162,6 +164,7 @@ export const AdminDashboardPage: React.FC = () => {
         issuesApi.list({ unassigned: true, page_size: 10 }),
         auditApi.list({ page_size: 10 }),
         SprintService.getAwaitingApprovalSprints().catch(() => []),
+        adminApi.getPipeline().catch(() => null),
       ]);
 
       setStats(dashboardStats);
@@ -170,6 +173,7 @@ export const AdminDashboardPage: React.FC = () => {
       setUnassignedQueue(unassignedList.items);
       setAuditLogs(logsList.items);
       setAwaitingApproval(pendingSprints || []);
+      if (pipelineTelemetry) setPipelineData(pipelineTelemetry);
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Failed to load dashboard data');
     } finally {
@@ -416,6 +420,13 @@ export const AdminDashboardPage: React.FC = () => {
         <Suspense fallback={<LoadingSpinner message="Loading advanced analytics..." />}>
           <AdvancedAnalytics />
         </Suspense>
+
+        {/* CI/CD Pipeline & GitHub Deployment Telemetry */}
+        <CiCdPipelineSection
+          data={pipelineData}
+          isLoading={isRefreshing}
+          onRefresh={() => fetchData(true)}
+        />
 
         {/* Main Content Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1.5rem', marginBottom: '2rem', marginTop: '2rem', alignItems: 'start' }}>

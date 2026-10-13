@@ -6,8 +6,6 @@ const Layout = lazy(() => import('../components/layout/Layout').then(m => ({ def
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 import { HomePage } from '../pages/HomePage';
-const LoginPage = lazy(() => import('../pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('../pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const ProjectsPage = lazy(() => import('../pages/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
 const IssuesPage = lazy(() => import('../pages/IssuesPage').then(m => ({ default: m.IssuesPage })));
@@ -33,10 +31,10 @@ export const AppRoutes: React.FC = () => {
     <BrowserRouter>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          {/* Public Landing & Authentication Routes */}
+          {/* Public Landing & Authentication Popup Routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<Navigate to="/?auth=login" replace />} />
+          <Route path="/register" element={<Navigate to="/?auth=register" replace />} />
 
           {/* Authenticated Protected Application Routes */}
           <Route element={<ProtectedRoute />}>

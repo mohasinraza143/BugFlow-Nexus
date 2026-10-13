@@ -27,15 +27,27 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { BrandLogo } from '../components/common/BrandLogo';
 import { ThemeToggle } from '../components/common/ThemeToggle';
+import { useSearchParams } from 'react-router-dom';
+import { AuthModal } from '../components/auth/AuthModal';
 import { UserAvatar } from '../components/common/UserAvatar';
 import './HomePage.css';
 
 export const HomePage: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'sprints' | 'triage' | 'analytics'>('sprints');
   const [analyticsTimeframe, setAnalyticsTimeframe] = useState<'7d' | '14d' | '30d'>('7d');
+
+  // Popup Modal Auth State
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(() => {
+    const auth = searchParams.get('auth');
+    return auth === 'login' || auth === 'register';
+  });
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>(() => {
+    return searchParams.get('auth') === 'register' ? 'register' : 'login';
+  });
 
   const dashboardPath = () => {
     if (!user) return '/login';
@@ -47,6 +59,23 @@ export const HomePage: React.FC = () => {
   const go = (path: string) => {
     setMobileMenuOpen(false);
     navigate(path);
+  };
+
+  const openAuth = (mode: 'login' | 'register') => {
+    if (isAuthenticated) {
+      navigate(dashboardPath());
+    } else {
+      setAuthModalMode(mode);
+      setAuthModalOpen(true);
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const closeAuth = () => {
+    setAuthModalOpen(false);
+    if (searchParams.get('auth')) {
+      setSearchParams({}, { replace: true });
+    }
   };
 
   return (
@@ -68,7 +97,7 @@ export const HomePage: React.FC = () => {
           <button
             type="button"
             className="announcement-link"
-            onClick={() => go(isAuthenticated ? dashboardPath() : '/register')}
+            onClick={() => openAuth('register')}
             aria-label="Explore Features in Nexus 2.0"
             style={{ background: 'none', border: 'none', font: 'inherit', color: 'inherit', cursor: 'pointer', padding: 0 }}
           >
@@ -121,11 +150,11 @@ export const HomePage: React.FC = () => {
               </div>
             ) : (
               <>
-                <button className="btn-nav-secondary" onClick={() => go('/login')}>
+                <button className="btn-nav-secondary" onClick={() => openAuth('login')}>
                   <LogIn size={15} />
                   <span>Sign In</span>
                 </button>
-                <button className="btn-nav-primary" onClick={() => go('/register')}>
+                <button className="btn-nav-primary" onClick={() => openAuth('register')}>
                   <span>Get Started</span>
                   <ArrowRight size={15} />
                 </button>
@@ -169,10 +198,10 @@ export const HomePage: React.FC = () => {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <button className="btn-nav-secondary w-full" onClick={() => go('/login')}>
+                  <button className="btn-nav-secondary w-full" onClick={() => openAuth('login')}>
                     Sign In
                   </button>
-                  <button className="btn-nav-primary w-full" onClick={() => go('/register')}>
+                  <button className="btn-nav-primary w-full" onClick={() => openAuth('register')}>
                     Get Started Free <ArrowRight size={16} />
                   </button>
                 </div>
@@ -206,7 +235,7 @@ export const HomePage: React.FC = () => {
         <div className="hero-cta-group">
           <button
             className="btn-hero-primary"
-            onClick={() => go(isAuthenticated ? dashboardPath() : '/register')}
+            onClick={() => openAuth('register')}
           >
             <span>{isAuthenticated ? 'Launch Workspace' : 'Start Free Trial'}</span>
             <ArrowRight size={18} />
@@ -330,7 +359,7 @@ export const HomePage: React.FC = () => {
                     <button
                       type="button"
                       className="triage-action-btn"
-                      onClick={() => go(isAuthenticated ? dashboardPath() : '/login')}
+                      onClick={() => isAuthenticated ? navigate(dashboardPath()) : openAuth('login')}
                       aria-label="Report Defect in workspace"
                     >
                       + Report Defect
@@ -721,7 +750,7 @@ export const HomePage: React.FC = () => {
                 <button
                   type="button"
                   className="btn-hero-primary w-full"
-                  onClick={() => go(isAuthenticated ? '/analytics' : '/login')}
+                  onClick={() => isAuthenticated ? navigate('/analytics') : openAuth('login')}
                   style={{ width: '100%', justifyContent: 'center' }}
                 >
                   <BarChart3 size={16} />
@@ -790,7 +819,7 @@ export const HomePage: React.FC = () => {
             <button
               type="button"
               className="btn-hero-primary"
-              onClick={() => go(isAuthenticated ? dashboardPath() : '/register')}
+              onClick={() => openAuth('register')}
             >
               <span>{isAuthenticated ? 'Open Your Workspace' : 'Create Free Workspace'}</span>
               <ArrowRight size={18} aria-hidden="true" />
@@ -840,8 +869,8 @@ export const HomePage: React.FC = () => {
 
           <div className="footer-links-col">
             <h3>Platform</h3>
-            <button type="button" onClick={() => go('/login')}>Sign In</button>
-            <button type="button" onClick={() => go('/register')}>Create Account</button>
+            <button type="button" onClick={() => openAuth('login')}>Sign In</button>
+            <button type="button" onClick={() => openAuth('register')}>Create Account</button>
             <a href="mailto:support@bugflow.io">Contact Support</a>
             <span>v2.4.0-Enterprise</span>
           </div>
@@ -857,6 +886,13 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Instant Popup Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={closeAuth}
+        initialMode={authModalMode}
+      />
     </div>
   );
 };

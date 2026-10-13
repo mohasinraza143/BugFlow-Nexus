@@ -6,10 +6,6 @@ import {
   Camera,
   CheckCircle,
   CheckCircle2,
-  Eye,
-  EyeOff,
-  KeyRound,
-  Lock,
   LogOut,
   Mail,
   RefreshCw,
@@ -67,17 +63,6 @@ export const ProfilePage: React.FC = () => {
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
 
-  // Change Password Form State
-  const [currentPassword, setCurrentPassword] = useState<string>('');
-  const [newPassword, setNewPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [showCurrentPass, setShowCurrentPass] = useState<boolean>(false);
-  const [showNewPass, setShowNewPass] = useState<boolean>(false);
-  const [showConfirmPass, setShowConfirmPass] = useState<boolean>(false);
-  const [isChangingPass, setIsChangingPass] = useState<boolean>(false);
-  const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
-  const [passErrorMsg, setPassErrorMsg] = useState<string | null>(null);
-
   // Quick Stats
   const [userIssueCount, setUserIssueCount] = useState<number>(0);
 
@@ -126,47 +111,6 @@ export const ProfilePage: React.FC = () => {
       setProfileErrorMsg(getApiErrorMessage(err));
     } finally {
       setIsUpdatingProfile(false);
-    }
-  };
-
-  // Handle Change Password Submit
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPassSuccessMsg(null);
-    setPassErrorMsg(null);
-
-    if (!currentPassword) {
-      setPassErrorMsg('Please enter your current password.');
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPassErrorMsg('New password must be at least 8 characters long.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPassErrorMsg('New passwords do not match.');
-      return;
-    }
-    if (newPassword === currentPassword) {
-      setPassErrorMsg('New password must be different from current password.');
-      return;
-    }
-
-    setIsChangingPass(true);
-    try {
-      const res = await authApi.changePassword({
-        current_password: currentPassword,
-        new_password: newPassword,
-      });
-      setPassSuccessMsg(res.message || 'Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setTimeout(() => setPassSuccessMsg(null), 5000);
-    } catch (err: unknown) {
-      setPassErrorMsg(getApiErrorMessage(err));
-    } finally {
-      setIsChangingPass(false);
     }
   };
 
@@ -690,145 +634,7 @@ export const ProfilePage: React.FC = () => {
           </form>
         </div>
 
-        {/* 2. Change Password & Security Form */}
-        <div className="card">
-          <div className="card-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <KeyRound size={18} color="#818cf8" />
-              <h3 className="card-title">Change Password</h3>
-            </div>
-          </div>
 
-          <form onSubmit={handlePasswordSubmit}>
-            <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {passSuccessMsg && (
-                <div
-                  style={{
-                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.4)',
-                    color: '#34d399',
-                    padding: '0.65rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <CheckCircle2 size={16} />
-                  <span>{passSuccessMsg}</span>
-                </div>
-              )}
-
-              {passErrorMsg && (
-                <div
-                  style={{
-                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                    border: '1px solid rgba(239, 68, 68, 0.4)',
-                    color: '#f87171',
-                    padding: '0.65rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <XCircle size={16} />
-                  <span>{passErrorMsg}</span>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="current-pass">
-                  Current Password <span style={{ color: 'var(--danger)' }}>*</span>
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="current-pass"
-                    type={showCurrentPass ? 'text' : 'password'}
-                    required
-                    className="form-input"
-                    placeholder="Enter your current password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    style={{ paddingRight: '2.5rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPass(!showCurrentPass)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                  >
-                    {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="new-pass">
-                  New Password <span style={{ color: 'var(--danger)' }}>*</span>
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="new-pass"
-                    type={showNewPass ? 'text' : 'password'}
-                    required
-                    minLength={8}
-                    className="form-input"
-                    placeholder="Minimum 8 characters"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    style={{ paddingRight: '2.5rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPass(!showNewPass)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                  >
-                    {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="confirm-pass">
-                  Confirm New Password <span style={{ color: 'var(--danger)' }}>*</span>
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    id="confirm-pass"
-                    type={showConfirmPass ? 'text' : 'password'}
-                    required
-                    minLength={8}
-                    className="form-input"
-                    placeholder="Re-enter new password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    style={{ paddingRight: '2.5rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                  >
-                    {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="submit"
-                disabled={isChangingPass || !currentPassword || !newPassword || !confirmPassword}
-                className="btn btn-primary"
-              >
-                <Lock size={15} />
-                <span>{isChangingPass ? 'Updating Password...' : 'Update Password'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
 
       {/* ── Danger Zone Card ────────────────────────────── */}
