@@ -50,7 +50,7 @@ import type { Issue, IssueStatus, Priority, Severity } from '../types/issue';
 import type { Project } from '../types/project';
 import { getRoleLabel } from '../types/auth';
 import { formatDate, formatRelativeTime } from '../utils/formatters';
-import { generateAnalyticsPdfReport, generateIssuesPdfReport } from '../utils/pdfGenerator';
+
 
 type DashboardDensity = 'comfortable' | 'compact';
 type TrendRange = '7d' | '30d' | '90d' | 'all';
@@ -515,7 +515,8 @@ export const DashboardPage: React.FC = () => {
   }, [userIssues, selectedChip, statusFilter, projectFilter, severityFilter, priorityFilter, searchQuery]);
 
   // Export handlers (STEP 10)
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
+    const { generateAnalyticsPdfReport } = await import('../utils/pdfGenerator');
     generateAnalyticsPdfReport({
       user,
       statusDist,
@@ -525,7 +526,8 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
-  const handleExportIssuesPdf = () => {
+  const handleExportIssuesPdf = async () => {
+    const { generateIssuesPdfReport } = await import('../utils/pdfGenerator');
     generateIssuesPdfReport(filteredIssues, user, `Filter: ${selectedChip}`, projects);
   };
 

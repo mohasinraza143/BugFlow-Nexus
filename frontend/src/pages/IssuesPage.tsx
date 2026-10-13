@@ -32,7 +32,6 @@ import type {
 import type { Project } from '../types/project';
 import type { UserDetail } from '../types/user';
 import { formatDate } from '../utils/formatters';
-import { generateIssuesPdfReport } from '../utils/pdfGenerator';
 
 export const IssuesPage: React.FC = () => {
   const { user } = useAuth();
@@ -261,13 +260,14 @@ export const IssuesPage: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
           <button
-            onClick={() => {
+            onClick={async () => {
               const filterText = [
                 statusFilter ? `Status: ${statusFilter}` : null,
                 severityFilter ? `Severity: ${severityFilter}` : null,
                 priorityFilter ? `Priority: ${priorityFilter}` : null,
                 searchQuery ? `Search: "${searchQuery}"` : null,
               ].filter(Boolean).join(', ');
+              const { generateIssuesPdfReport } = await import('../utils/pdfGenerator');
               generateIssuesPdfReport(issues, user, filterText || undefined, projects);
             }}
             disabled={issues.length === 0}

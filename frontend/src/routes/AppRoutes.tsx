@@ -2,7 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { RoleProtectedRoute } from '../components/common/RoleProtectedRoute';
-import { Layout } from '../components/layout/Layout';
+const Layout = lazy(() => import('../components/layout/Layout').then(m => ({ default: m.Layout })));
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 // Lazy-loaded page components for fast initial load

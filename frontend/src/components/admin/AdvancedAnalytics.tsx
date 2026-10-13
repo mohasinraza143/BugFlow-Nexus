@@ -6,7 +6,7 @@ import {
 import { Clock, AlertOctagon, AlertTriangle, CheckCircle, CircleDot, Bug, TrendingUp, Download, ChevronDown } from 'lucide-react';
 import { analyticsApi, type AnalyticsFilterParams, type TrendFilterParams } from '../../api/analytics';
 import { useAuth } from '../../hooks/useAuth';
-import { generateAnalyticsPdfReport } from '../../utils/pdfGenerator';
+
 import type { 
   SystemAnalyticsResponse, 
   IssueTrendResponse, 
@@ -112,6 +112,7 @@ export const AdvancedAnalytics: React.FC = () => {
     
     try {
       const data = await analyticsApi.downloadReport(downloadPeriod);
+      const { generateAnalyticsPdfReport } = await import('../../utils/pdfGenerator');
       generateAnalyticsPdfReport({
         user: user || null,
         statusDist: data.status_distribution,

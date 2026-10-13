@@ -32,7 +32,7 @@ const ROLE_OPTIONS: RoleOption[] = [
     id: 'ADMIN',
     name: 'Admin',
     sub: 'System Administration',
-    placeholderEmail: 'admin@company.com',
+    placeholderEmail: 'admin@gmail.com',
     icon: <Shield size={16} />,
     badgeClass: 'role-badge-admin',
   },
@@ -40,7 +40,7 @@ const ROLE_OPTIONS: RoleOption[] = [
     id: 'TESTER',
     name: 'QA Tester',
     sub: 'Defects & Verification',
-    placeholderEmail: 'tester@company.com',
+    placeholderEmail: 'tester@gmail.com',
     icon: <CheckCircle2 size={16} />,
     badgeClass: 'role-badge-tester',
   },
@@ -48,7 +48,7 @@ const ROLE_OPTIONS: RoleOption[] = [
     id: 'USER',
     name: 'User',
     sub: 'Report & Track Issues',
-    placeholderEmail: 'user@company.com',
+    placeholderEmail: 'user@gmail.com',
     icon: <UserCheck size={16} />,
     badgeClass: 'role-badge-user',
   },
@@ -130,9 +130,9 @@ export const LoginPage: React.FC = () => {
 
       {/* Top Navbar */}
       <nav className="auth-top-nav">
-        <div onClick={() => navigate('/')}>
+        <Link to="/" aria-label="BugFlow-Nexus Home" style={{ textDecoration: 'none' }}>
           <BrandLogo size={32} />
-        </div>
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <ThemeToggle />
           <button className="btn-nav-secondary" onClick={() => navigate('/')}>
@@ -141,7 +141,7 @@ export const LoginPage: React.FC = () => {
         </div>
       </nav>
 
-      <div className="auth-split-container">
+      <main id="main-content" role="main" className="auth-split-container">
         {/* Left Side: Enterprise Showcase */}
         <div className="auth-showcase-panel">
           <div className="showcase-content">
@@ -221,7 +221,7 @@ export const LoginPage: React.FC = () => {
                       type="button"
                       className={`role-card-btn ${isSelected ? 'active' : ''}`}
                       onClick={() => handleSelectRole(opt)}
-                      aria-label={`Select role ${opt.name}`}
+                      aria-pressed={isSelected}
                     >
                       <div className={`role-card-icon ${opt.badgeClass}`}>
                         {opt.icon}
@@ -238,10 +238,11 @@ export const LoginPage: React.FC = () => {
 
             <form onSubmit={handlePasswordLogin} className="auth-form-element">
               <div className="form-group">
-                <label className="form-label">Email Address</label>
+                <label className="form-label" htmlFor="login-email">Email Address</label>
                 <div className="input-with-icon">
                   <Mail size={16} className="input-icon-left" />
                   <input
+                    id="login-email"
                     type="email"
                     required
                     className="form-input"
@@ -254,11 +255,12 @@ export const LoginPage: React.FC = () => {
 
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <label className="form-label" style={{ margin: 0 }}>Password</label>
+                  <label className="form-label" htmlFor="login-password" style={{ margin: 0 }}>Password</label>
                 </div>
                 <div className="input-with-icon">
                   <Lock size={16} className="input-icon-left" />
                   <input
+                    id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     className="form-input"
@@ -270,7 +272,6 @@ export const LoginPage: React.FC = () => {
                     type="button"
                     className="input-icon-right"
                     onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -300,7 +301,7 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

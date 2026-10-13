@@ -2312,16 +2312,47 @@ textarea {
 
 .input-icon-right {
   position: absolute;
-  right: 0.9rem;
-  color: var(--text-muted);
-  background: none;
+  right: 0.5rem;
+  color: var(--text-secondary);
+  background: transparent;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
 }
 
 .input-icon-right:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.btn-nav-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.btn-nav-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-medium);
   color: var(--text-primary);
 }
 
@@ -2341,12 +2372,13 @@ textarea {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
+  min-height: 40px;
 }
 
 .role-pill-btn.active {
   background: var(--primary-subtle);
   color: #818cf8;
-  border-color: var(--primary);
+  border-color: #6366f1;
 }
 
 .btn-auth-submit {
@@ -2354,9 +2386,9 @@ textarea {
   width: 100%;
   padding: 0.75rem;
   border-radius: var(--radius-md);
-  background: var(--primary);
+  background: #4f46e5;
   color: #ffffff;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 700;
   border: none;
   display: flex;
@@ -2364,12 +2396,13 @@ textarea {
   justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px var(--primary-subtle);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
   transition: all 0.2s ease;
+  min-height: 44px;
 }
 
 .btn-auth-submit:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: #4338ca;
   transform: translateY(-1px);
 }
 
@@ -2382,12 +2415,13 @@ textarea {
 
 .auth-footer-link a {
   font-weight: 700;
-  color: var(--primary);
+  color: #818cf8;
   text-decoration: none;
 }
 
 .auth-footer-link a:hover {
   text-decoration: underline;
+  color: #a5b4fc;
 }
 
 @media (max-width: 900px) {

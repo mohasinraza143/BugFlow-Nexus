@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Activity,
@@ -26,7 +26,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Modal } from '../components/common/Modal';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { SeverityBadge } from '../components/common/SeverityBadge';
-import { AdvancedAnalytics } from '../components/admin/AdvancedAnalytics';
+const AdvancedAnalytics = lazy(() => import('../components/admin/AdvancedAnalytics').then(m => ({ default: m.AdvancedAnalytics })));
 import { SprintService } from '../services/SprintService';
 import type { AdminDashboardResponse, InactiveAssigneeItem } from '../types/admin';
 import type { DeveloperAnalyticsItem } from '../types/analytics';
@@ -413,7 +413,9 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Advanced Analytics Section */}
-        <AdvancedAnalytics />
+        <Suspense fallback={<LoadingSpinner message="Loading advanced analytics..." />}>
+          <AdvancedAnalytics />
+        </Suspense>
 
         {/* Main Content Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1.5rem', marginBottom: '2rem', marginTop: '2rem', alignItems: 'start' }}>

@@ -85,9 +85,9 @@ export const RegisterPage: React.FC = () => {
 
       {/* Top Navbar */}
       <nav className="auth-top-nav">
-        <div onClick={() => navigate('/')}>
+        <Link to="/" aria-label="BugFlow-Nexus Home" style={{ textDecoration: 'none' }}>
           <BrandLogo size={32} />
-        </div>
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <ThemeToggle />
           <button className="btn-nav-secondary" onClick={() => navigate('/')}>
@@ -96,7 +96,7 @@ export const RegisterPage: React.FC = () => {
         </div>
       </nav>
 
-      <div className="auth-split-container">
+      <main id="main-content" role="main" className="auth-split-container">
         {/* Left Side: Enterprise Benefits */}
         <div className="auth-showcase-panel">
           <div className="showcase-content">
@@ -147,14 +147,15 @@ export const RegisterPage: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="auth-form-element">
               <div className="form-group">
-                <label className="form-label">Full Name</label>
+                <label className="form-label" htmlFor="reg-name">Full Name</label>
                 <div className="input-with-icon">
                   <UserIcon size={16} className="input-icon-left" />
                   <input
+                    id="reg-name"
                     type="text"
                     required
                     className="form-input"
-                    placeholder="Alex Morgan"
+                    placeholder="Enter Your Name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                   />
@@ -162,14 +163,15 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Work Email</label>
+                <label className="form-label" htmlFor="reg-email">Work Email</label>
                 <div className="input-with-icon">
                   <Mail size={16} className="input-icon-left" />
                   <input
+                    id="reg-email"
                     type="email"
                     required
                     className="form-input"
-                    placeholder="alex@company.com"
+                    placeholder="name@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -179,11 +181,12 @@ export const RegisterPage: React.FC = () => {
               {/* Role Selection Tabs */}
               <div className="form-group">
                 <label className="form-label">Select Your Account Role</label>
-                <div className="role-selector-pills" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
+                <div className="role-selector-pills" role="group" aria-label="Account role selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
                   <button
                     type="button"
                     className={`role-pill-btn ${role === 'TESTER' ? 'active' : ''}`}
                     onClick={() => setRole('TESTER')}
+                    aria-pressed={role === 'TESTER'}
                   >
                     🔍 QA Tester
                   </button>
@@ -191,6 +194,7 @@ export const RegisterPage: React.FC = () => {
                     type="button"
                     className={`role-pill-btn ${role === 'USER' ? 'active' : ''}`}
                     onClick={() => setRole('USER')}
+                    aria-pressed={role === 'USER'}
                   >
                     👤 User
                   </button>
@@ -198,6 +202,7 @@ export const RegisterPage: React.FC = () => {
                     type="button"
                     className={`role-pill-btn ${role === 'ADMIN' ? 'active' : ''}`}
                     onClick={() => setRole('ADMIN')}
+                    aria-pressed={role === 'ADMIN'}
                   >
                     👑 Admin
                   </button>
@@ -205,10 +210,11 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Password</label>
+                <label className="form-label" htmlFor="reg-password">Password</label>
                 <div className="input-with-icon">
                   <Lock size={16} className="input-icon-left" />
                   <input
+                    id="reg-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     className="form-input"
@@ -220,7 +226,7 @@ export const RegisterPage: React.FC = () => {
                     type="button"
                     className="input-icon-right"
                     onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -239,10 +245,11 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Confirm Password</label>
+                <label className="form-label" htmlFor="reg-confirm-password">Confirm Password</label>
                 <div className="input-with-icon">
                   <Lock size={16} className="input-icon-left" />
                   <input
+                    id="reg-confirm-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     className="form-input"
@@ -269,7 +276,7 @@ export const RegisterPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

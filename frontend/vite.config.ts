@@ -11,17 +11,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('plotly.js') || id.includes('react-plotly')) {
-            return 'vendor-plotly';
-          }
-          if (id.includes('jspdf') || id.includes('jspdf-autotable') || id.includes('html2canvas')) {
-            return 'vendor-pdf';
-          }
-          if (id.includes('recharts')) {
-            return 'vendor-recharts';
-          }
-          if (id.includes('node_modules')) {
-            return 'vendor-core';
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/react-router/') ||
+            id.includes('/react-router-dom/')
+          ) {
+            return 'vendor-react';
           }
         },
       },

@@ -616,7 +616,7 @@ export const HomePage: React.FC = () => {
             <div className="analytics-chart-card">
               <div className="chart-card-header">
                 <div>
-                  <h4>Sprint Trajectory &amp; Burndown Curve</h4>
+                  <h3>Sprint Trajectory &amp; Burndown Curve</h3>
                   <p>Ideal velocity vs real-time team issue resolution</p>
                 </div>
                 <div className="chart-legend-pills">
@@ -680,7 +680,7 @@ export const HomePage: React.FC = () => {
 
             {/* Right: Defect Severity & QA Distribution */}
             <div className="analytics-side-card">
-              <h4>Severity Matrix &amp; Status</h4>
+              <h3>Severity Matrix &amp; Status</h3>
               <p>Active issues categorized by impact level</p>
 
               <div className="severity-bar-list">

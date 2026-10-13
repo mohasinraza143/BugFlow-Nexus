@@ -40,7 +40,7 @@ import type { Comment } from '../types/comment';
 import type { IssueDetail, IssueStatus } from '../types/issue';
 import type { UserDetail } from '../types/user';
 import { formatDate, formatFileSize, formatRelativeTime } from '../utils/formatters';
-import { generateSingleIssuePdfReport } from '../utils/pdfGenerator';
+
 
 export const IssueDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -492,7 +492,12 @@ export const IssueDetailPage: React.FC = () => {
             )}
 
             <button
-              onClick={() => issue && generateSingleIssuePdfReport(issue, comments)}
+              onClick={async () => {
+                if (issue) {
+                  const { generateSingleIssuePdfReport } = await import('../utils/pdfGenerator');
+                  generateSingleIssuePdfReport(issue, comments);
+                }
+              }}
               className="btn btn-secondary btn-sm"
               title="Download neat PDF defect report"
             >
