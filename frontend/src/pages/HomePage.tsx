@@ -58,26 +58,38 @@ export const HomePage: React.FC = () => {
       <div className="brand-tricolor-stripe" />
 
       {/* Top Banner */}
-      <div className="top-announcement-bar">
+      <aside className="top-announcement-bar" aria-label="Announcement">
         <div className="announcement-content">
           <span className="brand-tricolor-tag">NEXUS 2.0</span>
           <span className="announcement-text">
             <span className="brand-tricolor-text" style={{ marginRight: '0.3rem' }}>BugFlow-Nexus</span>
             Engine Released with Real-Time Sprint Analytics
           </span>
-          <span className="announcement-link" onClick={() => go(isAuthenticated ? dashboardPath() : '/register')}>
-            Explore Features <ChevronRight size={14} />
-          </span>
+          <button
+            type="button"
+            className="announcement-link"
+            onClick={() => go(isAuthenticated ? dashboardPath() : '/register')}
+            aria-label="Explore Features in Nexus 2.0"
+            style={{ background: 'none', border: 'none', font: 'inherit', color: 'inherit', cursor: 'pointer', padding: 0 }}
+          >
+            Explore Features <ChevronRight size={14} aria-hidden="true" />
+          </button>
         </div>
-      </div>
+      </aside>
 
       {/* Modern Sticky Navbar */}
-      <nav className="landing-nav">
+      <nav className="landing-nav" aria-label="Main Navigation">
         <div className="landing-nav-container">
           {/* Brand Logo */}
-          <div onClick={() => go('/')}>
+          <button
+            type="button"
+            className="brand-logo-btn"
+            onClick={() => go('/')}
+            aria-label="BugFlow-Nexus Home"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
+          >
             <BrandLogo size={36} edition="NEXUS" />
-          </div>
+          </button>
 
           {/* Desktop Navigation Links */}
           <div className="desktop-nav-links">
@@ -170,8 +182,9 @@ export const HomePage: React.FC = () => {
         )}
       </nav>
 
-      {/* HERO SECTION */}
-      <header className="hero-section">
+      <main id="main-content" role="main">
+        {/* HERO SECTION */}
+        <header className="hero-section">
         <div className="hero-badge-container">
           <div className="hero-pill-badge">
             <span className="pulsing-beacon" />
@@ -215,39 +228,42 @@ export const HomePage: React.FC = () => {
           <div className="mockup-window">
             {/* macOS Window Titlebar */}
             <div className="mockup-header">
-              <div className="mac-controls">
+              <div className="mac-controls" aria-hidden="true">
                 <span className="dot red" />
                 <span className="dot yellow" />
                 <span className="dot green" />
               </div>
               <div className="mockup-title">
-                <ShieldCheck size={13} style={{ color: '#10b981' }} />
+                <ShieldCheck size={13} style={{ color: '#10b981' }} aria-hidden="true" />
                 <span><b className="brand-tricolor-text" style={{ fontSize: '0.8rem' }}>bugflow.nexus</b>/workspace/nexus-pay-app</span>
               </div>
               <div className="mockup-status">
-                <span className="live-dot" /> LIVE TELEMETRY
+                <span className="live-dot" aria-hidden="true" /> LIVE TELEMETRY
               </div>
             </div>
 
             {/* Mockup Tab Selector */}
             <div className="mockup-tabs">
               <button
+                type="button"
                 className={`mockup-tab ${activeTab === 'sprints' ? 'active' : ''}`}
                 onClick={() => setActiveTab('sprints')}
               >
-                <Target size={14} /> Sprint 2: Payments UI
+                <Target size={14} aria-hidden="true" /> Sprint 2: Payments UI
               </button>
               <button
+                type="button"
                 className={`mockup-tab ${activeTab === 'triage' ? 'active' : ''}`}
                 onClick={() => setActiveTab('triage')}
               >
-                <Bug size={14} /> Defect Triage (8 Open)
+                <Bug size={14} aria-hidden="true" /> Defect Triage (8 Open)
               </button>
               <button
+                type="button"
                 className={`mockup-tab ${activeTab === 'analytics' ? 'active' : ''}`}
                 onClick={() => setActiveTab('analytics')}
               >
-                <BarChart3 size={14} /> Burndown Velocity
+                <BarChart3 size={14} aria-hidden="true" /> Burndown Velocity
               </button>
             </div>
 
@@ -308,10 +324,17 @@ export const HomePage: React.FC = () => {
                 <div className="mockup-triage-view">
                   <div className="triage-head">
                     <div>
-                      <h4>Active Triage Matrix</h4>
+                      <h3>Active Triage Matrix</h3>
                       <p>Instant severity classification and automated team load routing.</p>
                     </div>
-                    <button className="triage-action-btn">+ Report Defect</button>
+                    <button
+                      type="button"
+                      className="triage-action-btn"
+                      onClick={() => go(isAuthenticated ? dashboardPath() : '/login')}
+                      aria-label="Report Defect in workspace"
+                    >
+                      + Report Defect
+                    </button>
                   </div>
                   <div className="triage-columns">
                     <div className="triage-col">
@@ -347,10 +370,10 @@ export const HomePage: React.FC = () => {
                   <div className="analytics-graph-container">
                     <div className="graph-header">
                       <span>Ideal vs Actual Sprint Trajectory</span>
-                      <span className="graph-legend"><i className="legend-ideal" /> Ideal <i className="legend-actual" /> Actual</span>
+                      <span className="graph-legend"><i className="legend-ideal" aria-hidden="true" /> Ideal <i className="legend-actual" aria-hidden="true" /> Actual</span>
                     </div>
                     <div className="fake-svg-chart">
-                      <svg viewBox="0 0 500 120" className="chart-svg">
+                      <svg viewBox="0 0 500 120" className="chart-svg" role="img" aria-label="Ideal versus actual sprint trajectory burndown graph">
                         <path d="M 10 10 L 490 110" stroke="#475569" strokeDasharray="5 5" strokeWidth="2" fill="none" />
                         <path d="M 10 10 Q 150 40 250 50 T 490 105" stroke="#6366f1" strokeWidth="3" fill="none" />
                         <circle cx="250" cy="50" r="5" fill="#6366f1" />
@@ -479,25 +502,25 @@ export const HomePage: React.FC = () => {
         <div className="workflow-timeline">
           <div className="workflow-card">
             <div className="step-number">01</div>
-            <h4>Log & Triaged</h4>
+            <h3>Log & Triaged</h3>
             <p>
               Capture full reproduction steps, priority, severity, and environment details into
               centralized backlogs.
             </p>
           </div>
-          <div className="workflow-arrow"><ArrowRight size={22} /></div>
+          <div className="workflow-arrow" aria-hidden="true"><ArrowRight size={22} /></div>
           <div className="workflow-card">
             <div className="step-number">02</div>
-            <h4>Sprint Execution</h4>
+            <h3>Sprint Execution</h3>
             <p>
               Plan capacity, assign QA testers, and auto-transition issues into live development
               cycles.
             </p>
           </div>
-          <div className="workflow-arrow"><ArrowRight size={22} /></div>
+          <div className="workflow-arrow" aria-hidden="true"><ArrowRight size={22} /></div>
           <div className="workflow-card">
             <div className="step-number">03</div>
-            <h4>Verified & Closed</h4>
+            <h3>Verified & Closed</h3>
             <p>
               Tester verification updates the burndown graph in real-time. Unfinished tasks roll
               cleanly into subsequent sprints.
@@ -719,33 +742,36 @@ export const HomePage: React.FC = () => {
 
         <div className="comparison-table-wrapper">
           <table className="comparison-table">
+            <caption className="sr-only" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', border: 0 }}>
+              Defect tracking capabilities comparison between BugFlow-Nexus and legacy tools
+            </caption>
             <thead>
               <tr>
-                <th>Capability</th>
-                <th className="highlight-col"><span className="brand-tricolor-text">BugFlow-Nexus Platform</span></th>
-                <th>Legacy Tools (Jira / Spreadsheets)</th>
+                <th scope="col">Capability</th>
+                <th scope="col" className="highlight-col"><span className="brand-tricolor-text">BugFlow-Nexus Platform</span></th>
+                <th scope="col">Legacy Tools (Jira / Spreadsheets)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Sprint Progression</td>
-                <td className="highlight-col"><Check size={16} className="text-emerald" /> <b>Automatic on Begin Work</b></td>
-                <td><X size={16} className="text-muted" /> Manual per-issue dragging</td>
+                <th scope="row" style={{ fontWeight: 500, textAlign: 'left' }}>Sprint Progression</th>
+                <td className="highlight-col"><Check size={16} className="text-emerald" aria-hidden="true" /> <b>Automatic on Begin Work</b></td>
+                <td><X size={16} className="text-muted" aria-hidden="true" /> Manual per-issue dragging</td>
               </tr>
               <tr>
-                <td>Sprint Rollover</td>
-                <td className="highlight-col"><Check size={16} className="text-emerald" /> <b>Seamless Backlog Migration</b></td>
-                <td><X size={16} className="text-muted" /> Throws block errors & freezes</td>
+                <th scope="row" style={{ fontWeight: 500, textAlign: 'left' }}>Sprint Rollover</th>
+                <td className="highlight-col"><Check size={16} className="text-emerald" aria-hidden="true" /> <b>Seamless Backlog Migration</b></td>
+                <td><X size={16} className="text-muted" aria-hidden="true" /> Throws block errors &amp; freezes</td>
               </tr>
               <tr>
-                <td>Real-time Telemetry</td>
-                <td className="highlight-col"><Check size={16} className="text-emerald" /> <b>Live Reactive Charts</b></td>
-                <td><X size={16} className="text-muted" /> Requires full browser reload</td>
+                <th scope="row" style={{ fontWeight: 500, textAlign: 'left' }}>Real-time Telemetry</th>
+                <td className="highlight-col"><Check size={16} className="text-emerald" aria-hidden="true" /> <b>Live Reactive Charts</b></td>
+                <td><X size={16} className="text-muted" aria-hidden="true" /> Requires full browser reload</td>
               </tr>
               <tr>
-                <td>Interface Speed</td>
-                <td className="highlight-col"><Check size={16} className="text-emerald" /> <b>Instant (&lt;50ms)</b></td>
-                <td><X size={16} className="text-muted" /> Heavy, slow enterprise bloat</td>
+                <th scope="row" style={{ fontWeight: 500, textAlign: 'left' }}>Interface Speed</th>
+                <td className="highlight-col"><Check size={16} className="text-emerald" aria-hidden="true" /> <b>Instant (&lt;50ms)</b></td>
+                <td><X size={16} className="text-muted" aria-hidden="true" /> Heavy, slow enterprise bloat</td>
               </tr>
             </tbody>
           </table>
@@ -762,34 +788,42 @@ export const HomePage: React.FC = () => {
           </p>
           <div className="cta-buttons">
             <button
+              type="button"
               className="btn-hero-primary"
               onClick={() => go(isAuthenticated ? dashboardPath() : '/register')}
             >
               <span>{isAuthenticated ? 'Open Your Workspace' : 'Create Free Workspace'}</span>
-              <ArrowRight size={18} />
+              <ArrowRight size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
       </section>
+      </main>
 
       {/* ENTERPRISE FOOTER */}
-      <footer className="landing-footer">
+      <footer className="landing-footer" role="contentinfo">
         <div className="footer-grid">
           <div className="footer-brand-col">
-            <div onClick={() => go('/')}>
+            <button
+              type="button"
+              className="brand-logo-btn"
+              onClick={() => go('/')}
+              aria-label="BugFlow-Nexus Home"
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
+            >
               <BrandLogo size={32} />
-            </div>
+            </button>
             <p className="footer-desc">
               Next-generation agile bug tracking and defect verification system for high-velocity software teams.
             </p>
             <div className="system-health-pill">
-              <span className="green-ping" />
+              <span className="green-ping" aria-hidden="true" />
               <span>All Systems Fully Operational</span>
             </div>
           </div>
 
           <div className="footer-links-col">
-            <h5>Product</h5>
+            <h3>Product</h3>
             <a href="#features">Agile Sprints</a>
             <a href="#workflow">Defect Triage</a>
             <a href="#analytics">Live Burndown</a>
@@ -797,17 +831,17 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="footer-links-col">
-            <h5>Resources</h5>
+            <h3>Resources</h3>
             <a href="#comparison">Comparison</a>
             <a href="#features">Documentation</a>
-            <a href="#workflow">Security & Roles</a>
+            <a href="#workflow">Security &amp; Roles</a>
             <a href="#features">API Reference</a>
           </div>
 
           <div className="footer-links-col">
-            <h5>Platform</h5>
-            <button onClick={() => go('/login')}>Sign In</button>
-            <button onClick={() => go('/register')}>Create Account</button>
+            <h3>Platform</h3>
+            <button type="button" onClick={() => go('/login')}>Sign In</button>
+            <button type="button" onClick={() => go('/register')}>Create Account</button>
             <a href="mailto:support@bugflow.io">Contact Support</a>
             <span>v2.4.0-Enterprise</span>
           </div>

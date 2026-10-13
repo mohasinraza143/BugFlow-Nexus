@@ -46,7 +46,7 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
   {
     id: 'USER',
-    name: 'User (Reporter)',
+    name: 'User',
     sub: 'Report & Track Issues',
     placeholderEmail: 'user@company.com',
     icon: <UserCheck size={16} />,
@@ -61,8 +61,8 @@ function getRoleRedirect(role: UserRole, requestedFrom: string): string {
     role === 'ADMIN'
       ? isAdminPath
       : role === 'TESTER' || role === 'DEVELOPER'
-      ? isInvestigatorPath
-      : !isAdminPath && !isInvestigatorPath;
+        ? isInvestigatorPath
+        : !isAdminPath && !isInvestigatorPath;
 
   if (requestedFrom && requestedFrom !== '/' && requestedFrom !== '/login' && requestedFrom !== '/register' && canAccessRequestedPath) {
     return requestedFrom;
@@ -287,8 +287,8 @@ export const LoginPage: React.FC = () => {
                   {isSubmitting
                     ? 'Authenticating...'
                     : activeOption
-                    ? `Sign In as ${activeOption.name}`
-                    : 'Sign In to Workspace'}
+                      ? `Sign In as ${activeOption.name}`
+                      : 'Sign In to Workspace'}
                 </span>
                 <ArrowRight size={16} />
               </button>
