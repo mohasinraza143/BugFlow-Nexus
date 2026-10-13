@@ -12,7 +12,7 @@ export const apiClient = axios.create({
     'Pragma': 'no-cache',
     'Expires': '0',
   },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Add interceptor to aggressively bust cache on ALL GET requests

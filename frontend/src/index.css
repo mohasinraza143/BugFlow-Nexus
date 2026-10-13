@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -2180,52 +2178,112 @@ textarea {
   color: var(--text-secondary);
 }
 
-.demo-credentials-section {
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.75rem;
+/* Modern Role Selector in Login */
+.role-selector-wrap {
   margin-bottom: 1.25rem;
 }
 
-.demo-label {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-  display: block;
-  margin-bottom: 0.4rem;
-}
-
-.demo-chips-group {
+.role-selector-header {
   display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
-.demo-chip {
-  flex: 1;
-  min-width: 90px;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.74rem;
+.role-selector-label {
+  font-size: 0.75rem;
   font-weight: 700;
-  cursor: pointer;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  transition: all 0.15s ease;
-  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
 }
 
-.demo-chip:hover {
+.role-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .role-selector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.role-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.role-card-btn:hover {
   background: var(--bg-surface-hover);
   border-color: var(--border-muted);
+  transform: translateY(-1px);
 }
 
-.demo-chip.admin { border-color: rgba(249, 115, 22, 0.3); color: #fb923c; }
-.demo-chip.tester { border-color: rgba(34, 197, 94, 0.3); color: #4ade80; }
-.demo-chip.user { border-color: rgba(99, 102, 241, 0.3); color: #818cf8; }
+.role-card-btn.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1, 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.role-card-btn.active::after {
+  content: '✓';
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #818cf8;
+}
+
+.role-card-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.role-badge-admin { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+.role-badge-tester { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.role-badge-dev { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.role-badge-user { background: rgba(167, 139, 250, 0.15); color: #c084fc; }
+
+.role-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.role-card-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.role-card-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .auth-form-element {
   display: flex;

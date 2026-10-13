@@ -8,6 +8,9 @@ import {
   Mail,
   Sparkles,
   CheckCircle2,
+  Shield,
+  Laptop,
+  UserCheck,
 } from 'lucide-react';
 import { getApiErrorMessage } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
@@ -15,6 +18,50 @@ import type { User, UserRole } from '../../types/auth';
 import { storage } from '../../utils/storage';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import { ThemeToggle } from '../../components/common/ThemeToggle';
+
+interface RoleOption {
+  id: string;
+  name: string;
+  sub: string;
+  email: string;
+  icon: React.ReactNode;
+  badgeClass: string;
+}
+
+const ROLE_OPTIONS: RoleOption[] = [
+  {
+    id: 'ADMIN',
+    name: 'Admin',
+    sub: 'Full Access & Management',
+    email: 'admin@gmail.com',
+    icon: <Shield size={16} />,
+    badgeClass: 'role-badge-admin',
+  },
+  {
+    id: 'TESTER',
+    name: 'QA Tester',
+    sub: 'Defects & Test Cycles',
+    email: 'test@gmail.com',
+    icon: <CheckCircle2 size={16} />,
+    badgeClass: 'role-badge-tester',
+  },
+  {
+    id: 'DEVELOPER',
+    name: 'Developer',
+    sub: 'Triage & Resolution',
+    email: 'test@gmail.com',
+    icon: <Laptop size={16} />,
+    badgeClass: 'role-badge-dev',
+  },
+  {
+    id: 'USER',
+    name: 'Reporter',
+    sub: 'Report & Track Issues',
+    email: 'user@gmail.com',
+    icon: <UserCheck size={16} />,
+    badgeClass: 'role-badge-user',
+  },
+];
 
 function getRoleRedirect(role: UserRole, requestedFrom: string): string {
   const isAdminPath = requestedFrom === '/admin' || requestedFrom.startsWith('/admin-dashboard');
@@ -43,11 +90,19 @@ export const LoginPage: React.FC = () => {
   const rawFrom = loginState?.from?.pathname ?? '';
   const from = rawFrom !== '/' ? rawFrom : '';
 
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>('ADMIN');
+  const [email, setEmail] = useState<string>('admin@gmail.com');
+  const [password, setPassword] = useState<string>('password123');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const handleSelectRole = (opt: RoleOption) => {
+    setSelectedRole(opt.id);
+    setEmail(opt.email);
+    setPassword('password123');
+    setError(null);
+  };
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,11 +124,7 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const fillCredentials = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setError(null);
-  };
+  const activeOption = ROLE_OPTIONS.find((r) => r.id === selectedRole);
 
   return (
     <div className="auth-split-screen">
@@ -158,34 +209,33 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* 1-Click Demo Fill Bar */}
-            <div className="demo-credentials-section">
-              <span className="demo-label">1-CLICK QUICK ACCESS:</span>
-              <div className="demo-chips-group">
-                <button
-                  type="button"
-                  className="demo-chip admin"
-                  onClick={() => fillCredentials('admin@gmail.com', 'password123')}
-                  title="Admin Demo: admin@gmail.com / password123"
-                >
-                  👑 Admin (Full Access)
-                </button>
-                <button
-                  type="button"
-                  className="demo-chip tester"
-                  onClick={() => fillCredentials('test@gmail.com', 'password123')}
-                  title="QA Tester Demo: test@gmail.com / password123"
-                >
-                  🔍 QA Tester
-                </button>
-                <button
-                  type="button"
-                  className="demo-chip user"
-                  onClick={() => fillCredentials('user@gmail.com', 'password123')}
-                  title="User Demo: user@gmail.com / password123"
-                >
-                  👤 Reporter (User)
-                </button>
+            {/* Role Selection Grid */}
+            <div className="role-selector-wrap">
+              <div className="role-selector-header">
+                <span className="role-selector-label">Select Your Role</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Click role to switch</span>
+              </div>
+              <div className="role-selector-grid">
+                {ROLE_OPTIONS.map((opt) => {
+                  const isSelected = selectedRole === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`role-card-btn ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleSelectRole(opt)}
+                      aria-label={`Select role ${opt.name}`}
+                    >
+                      <div className={`role-card-icon ${opt.badgeClass}`}>
+                        {opt.icon}
+                      </div>
+                      <div className="role-card-text">
+                        <span className="role-card-name">{opt.name}</span>
+                        <span className="role-card-sub">{opt.sub}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -200,7 +250,10 @@ export const LoginPage: React.FC = () => {
                     className="form-input"
                     placeholder="name@company.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setSelectedRole('CUSTOM');
+                    }}
                   />
                 </div>
               </div>
@@ -224,6 +277,7 @@ export const LoginPage: React.FC = () => {
                     className="input-icon-right"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -235,7 +289,13 @@ export const LoginPage: React.FC = () => {
                 className="btn-auth-submit"
                 disabled={isSubmitting}
               >
-                <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Workspace'}</span>
+                <span>
+                  {isSubmitting
+                    ? 'Authenticating...'
+                    : activeOption
+                    ? `Sign In as ${activeOption.name}`
+                    : 'Sign In to Workspace'}
+                </span>
                 <ArrowRight size={16} />
               </button>
             </form>

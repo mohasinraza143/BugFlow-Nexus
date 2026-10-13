@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import {
   Activity,
   BarChart3,
@@ -20,7 +20,7 @@ import { analyticsApi } from '../api/analytics';
 import { getApiErrorMessage } from '../api/client';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { PlotlyDashboard } from '../components/common/PlotlyDashboard';
+const PlotlyDashboard = lazy(() => import('../components/common/PlotlyDashboard').then(m => ({ default: m.PlotlyDashboard })));
 import { useAuth } from '../hooks/useAuth';
 import type {
   DeveloperAnalyticsItem,
@@ -1011,7 +1011,9 @@ export const AnalyticsPage: React.FC = () => {
               Hover for values · Scroll to zoom · Drag to pan · Double-click to reset
             </p>
           </div>
-          <PlotlyDashboard />
+          <Suspense fallback={<LoadingSpinner message="Loading interactive charts..." />}>
+            <PlotlyDashboard />
+          </Suspense>
         </>
       )}
 

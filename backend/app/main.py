@@ -52,15 +52,24 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
+from fastapi.middleware.gzip import GZipMiddleware
+
 # -----------------------------------------------------------------
-# CORS Configuration (allows frontend development server)
+# GZip Compression (Fast JSON & telemetry delivery)
+# -----------------------------------------------------------------
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# -----------------------------------------------------------------
+# CORS Configuration (allows frontend development server & Render)
 # -----------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
+    allow_origin_regex=r"^https://.*\.onrender\.com$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=86400,
 )
 
 # -----------------------------------------------------------------
